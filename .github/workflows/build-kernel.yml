@@ -1,4 +1,4 @@
-name: Build OmniX Kernel
+name: Build OmniX OS ISO
 
 on:
   push:
@@ -9,23 +9,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Stažení zdrojových kódů (Checkout)
+    - name: Stazeni zdroju
       uses: actions/checkout@v4
 
-    - name: Instalace závislostí (Ubuntu)
+    - name: Instalace zavislosti
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld llvm
+        sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld llvm grub-pc-bin grub-efi-amd64-bin xorriso mtools
 
-    - name: Konfigurace a kompilace jádra
+    - name: Kompilace jadra
       run: |
         cd linux-7.0.3
         make ARCH=x86_64 LLVM=1 defconfig
         make ARCH=x86_64 LLVM=1 kvm_guest.config
         make ARCH=x86_64 LLVM=1 -j$(nproc)
 
-    - name: Uložení hotového bzImage
+    - name: Tvorba bootovaciho ISO
+      run: |
+        mkdir -p isodir/boot/grub
+        
+        # Zkopirovani hotoveho jadra
+        cp linux-7.0.3/arch/x86/boot/bzImage isodir/boot/
+        
+        # Vytvoreni GRUB menu
+        cat << 'GRUB' > isodir/boot/grub/grub.cfg
+        menuentry "OmniX OS (Core)" {
+            linux /boot/bzImage console=ttyS0 console=tty0 vga=788 nomodeset
+        }
+        GRUB
+        
+        # Zabaleni do TRUE .iso
+        grub-mkrescue -o OmniX-OS.iso isodir
+
+    - name: Ulozeni ISO na GitHub
       uses: actions/upload-artifact@v4
       with:
-        name: omnix-kernel
-        path: linux-7.0.3/arch/x86/boot/bzImage
+        name: omnix-os-iso
+        path: OmniX-OS.iso
