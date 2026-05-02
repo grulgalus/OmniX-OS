@@ -24,9 +24,10 @@ jobs:
         make ARCH=x86_64 LLVM=1 kvm_guest.config
         
         # Zapnuti zakladniho grafickeho zobrazovace pro Limbo
-        ./scripts/config -e CONFIG_FB_SIMPLE
-        ./scripts/config -e CONFIG_DRM_BOCHS
-        ./scripts/config -e CONFIG_FRAMEBUFFER_CONSOLE
+        # Úplné vnucení základní konzole
+        ./scripts/config -e CONFIG_VGA_CONSOLE
+        ./scripts/config -e CONFIG_DUMMY_CONSOLE
+        ./scripts/config -d CONFIG_DRM_BOCHS
         make ARCH=x86_64 LLVM=1 olddefconfig
         
         make ARCH=x86_64 LLVM=1 -j$(nproc)
@@ -41,7 +42,7 @@ jobs:
         set timeout=3
         menuentry "OmniX OS (Core)" {
             set gfxpayload=keep
-            linux /boot/bzImage console=tty0 earlycon=uart8250,io,0x3f8 earlyprintk=vga
+            linux /boot/bzImage console=tty0 console=ttyS0 vga=normal nomodeset
         }
         GRUB
         
