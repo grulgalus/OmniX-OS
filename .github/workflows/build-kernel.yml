@@ -1,0 +1,31 @@
+name: Build OmniX Kernel
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Stažení zdrojových kódů (Checkout)
+      uses: actions/checkout@v4
+
+    - name: Instalace závislostí (Ubuntu)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld
+
+    - name: Konfigurace a kompilace jádra
+      run: |
+        cd linux-7.0.3
+        make ARCH=x86_64 LLVM=1 defconfig
+        make ARCH=x86_64 LLVM=1 kvm_guest.config
+        make ARCH=x86_64 LLVM=1 -j$(nproc)
+
+    - name: Uložení hotového bzImage
+      uses: actions/upload-artifact@v4
+      with:
+        name: omnix-kernel
+        path: linux-7.0.3/arch/x86/boot/bzImage
