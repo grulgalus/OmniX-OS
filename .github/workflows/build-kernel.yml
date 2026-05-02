@@ -15,7 +15,7 @@ jobs:
     - name: Instalace závislostí (Ubuntu)
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld
+        sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld llvm
 
     - name: Konfigurace a kompilace jádra
       run: |
