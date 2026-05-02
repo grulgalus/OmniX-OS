@@ -17,28 +17,34 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld llvm grub-pc-bin grub-efi-amd64-bin xorriso mtools
 
-    - name: Kompilace jadra
+    - name: Kompilace jadra s grafikou
       run: |
         cd linux-7.0.3
         make ARCH=x86_64 LLVM=1 defconfig
         make ARCH=x86_64 LLVM=1 kvm_guest.config
+        
+        # Zapnuti zakladniho grafickeho zobrazovace pro Limbo
+        ./scripts/config -e CONFIG_FB_SIMPLE
+        ./scripts/config -e CONFIG_DRM_BOCHS
+        ./scripts/config -e CONFIG_FRAMEBUFFER_CONSOLE
+        make ARCH=x86_64 LLVM=1 olddefconfig
+        
         make ARCH=x86_64 LLVM=1 -j$(nproc)
 
     - name: Tvorba bootovaciho ISO
       run: |
         mkdir -p isodir/boot/grub
-        
-        # Zkopirovani hotoveho jadra
         cp linux-7.0.3/arch/x86/boot/bzImage isodir/boot/
         
-        # Vytvoreni GRUB menu
+        # Vytvoreni GRUB menu (Upravene pro spravne zobrazeni!)
         cat << 'GRUB' > isodir/boot/grub/grub.cfg
+        set timeout=3
         menuentry "OmniX OS (Core)" {
-            linux /boot/bzImage console=ttyS0 console=tty0 vga=788 nomodeset
+            set gfxpayload=keep
+            linux /boot/bzImage console=tty0 earlycon=uart8250,io,0x3f8 earlyprintk=vga
         }
         GRUB
         
-        # Zabaleni do TRUE .iso
         grub-mkrescue -o OmniX-OS.iso isodir
 
     - name: Ulozeni ISO na GitHub
