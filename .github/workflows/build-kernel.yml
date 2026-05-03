@@ -17,32 +17,64 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld llvm grub-pc-bin grub-efi-amd64-bin xorriso mtools
 
-    - name: Kompilace jadra s grafikou
+    - name: Kompilace jadra
       run: |
         cd linux-7.0.3
         make ARCH=x86_64 LLVM=1 defconfig
         make ARCH=x86_64 LLVM=1 kvm_guest.config
         
-        # Zapnuti zakladniho grafickeho zobrazovace pro Limbo
-        # Úplné vnucení základní konzole
+        # Nastaveni pro lepsi bootovani v Limbu
         ./scripts/config -e CONFIG_VGA_CONSOLE
-        ./scripts/config -e CONFIG_DUMMY_CONSOLE
-        ./scripts/config -d CONFIG_DRM_BOCHS
+        ./scripts/config -e CONFIG_FRAMEBUFFER_CONSOLE
+        ./scripts/config -e CONFIG_BLK_DEV_INITRD
         make ARCH=x86_64 LLVM=1 olddefconfig
         
         make ARCH=x86_64 LLVM=1 -j$(nproc)
+
+    - name: Tvorba RootFS (Init programu)
+      run: |
+        mkdir -p rootfs
+        
+        # Vytvoření malého init programu v C!
+        cat << 'CCODE' > rootfs/init.c
+        #include <stdio.h>
+        #include <unistd.h>
+        
+        int main() {
+            printf("\n\n=======================================\n");
+            printf("   VITEJ V OMNIX OS (Uzivatelsky rezim)!\n");
+            printf("=======================================\n");
+            printf("Jadro uspesne nacetlo nas INIT program.\n");
+            printf("Dalsi krok: Spusteni Pythonu...\n\n");
+            
+            while(1) {
+                sleep(1); // Zabrání pádu systému, poběží to navždy
+            }
+            return 0;
+        }
+        CCODE
+        
+        # Zkompilování do binárky jménem "init" (staticky linkované)
+        gcc -static rootfs/init.c -o rootfs/init
+        rm rootfs/init.c
+        
+        # Zabalení do initramfs (tohle jádro sežere jako svůj disk)
+        cd rootfs
+        find . | cpio -o -H newc | gzip > ../initramfs.cpio.gz
+        cd ..
 
     - name: Tvorba bootovaciho ISO
       run: |
         mkdir -p isodir/boot/grub
         cp linux-7.0.3/arch/x86/boot/bzImage isodir/boot/
+        cp initramfs.cpio.gz isodir/boot/
         
-        # Vytvoreni GRUB menu (Upravene pro spravne zobrazeni!)
+        # GRUB menu s načtením našeho nového RootFS (initrd)
         cat << 'GRUB' > isodir/boot/grub/grub.cfg
         set timeout=3
         menuentry "OmniX OS (Core)" {
-            set gfxpayload=keep
-            linux /boot/bzImage console=tty0 console=ttyS0 vga=normal nomodeset
+            linux /boot/bzImage console=tty0
+            initrd /boot/initramfs.cpio.gz
         }
         GRUB
         
