@@ -1,4 +1,4 @@
-name: Build OmniX OS (MS-DOS Edition)
+name: Build OmniX OS (Boot Sector Edition)
 
 on:
   push:
@@ -13,32 +13,15 @@ jobs:
       - name: Stáhnutí repozitáře
         uses: actions/checkout@v4
 
-      - name: Instalace nástrojů pro DOS (NASM a mtools)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y nasm mtools dosfstools
+      - name: Instalace NASM
+        run: sudo apt-get update && sudo apt-get install -y nasm
 
-      - name: Kompilace vlastního OmniX programu
+      - name: Kompilace vlastního OmniX OS
         run: |
-          # Zkompiluje tvůj Assembly kód do spustitelného DOS programu
-          nasm -f bin omnix.asm -o OMNIX.COM
+          nasm -f bin omnix.asm -o omnix_os.img
 
-      - name: Vytvoření obrazu disku (IMG) pro Limbo
-        run: |
-          # Vytvoří prázdný 100MB virtuální disk
-          dd if=/dev/zero of=omnix_drive.img bs=1M count=100
-          
-          # Naformátuje disk na starý dobrý FAT16 (aby ho DOS přečetl)
-          mkfs.fat -F 16 omnix_drive.img
-          
-          # Zkopíruje tvůj zkompilovaný program na disk
-          mcopy -i omnix_drive.img OMNIX.COM ::/
-          
-          # Zkopíruje originální složku MS-DOS na disk
-          mcopy -i omnix_drive.img -s MS-DOS ::/
-
-      - name: Nahrání hotového disku ke stažení
+      - name: Nahrání hotového OS ke stažení
         uses: actions/upload-artifact@v4
         with:
-          name: OmniX-DOS-Drive
-          path: omnix_drive.img
+          name: OmniX-Bootable-Floppy
+          path: omnix_os.img
