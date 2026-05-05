@@ -23,7 +23,6 @@ jobs:
           dd if=/dev/zero of=omnix_os.img bs=1024 count=1440
 
           dd if=boot.bin of=omnix_os.img conv=notrunc
-
       - name: Nahrání hotového OS ke stažení
         uses: actions/upload-artifact@v4
         with:
