@@ -1,16 +1,13 @@
-.model small
-.code
-org 100h
+org 100h          ; Říká kompilátoru, že děláme DOS .COM soubor
 
 start:
-    ; Funkce DOSu pro vypsani textu
+    ; Funkce DOSu pro vypsání textu
     mov ah, 09h
-    mov dx, offset message
+    mov dx, message   ; V NASM nepotřebujeme slovo 'offset'
     int 21h
 
-    ; Ukonceni programu a navrat do DOSu
+    ; Ukončení programu a návrat do DOSu
     mov ah, 4Ch
     int 21h
 
 message db 'Vitejte v OmniX OS (MS-DOS Edition)!$'
-end start
