@@ -1,4 +1,4 @@
-name: Build OmniX OS ISO
+name: Build OmniX OS (MS-DOS Edition)
 
 on:
   push:
@@ -8,80 +8,37 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Stazeni zdroju
-      uses: actions/checkout@v4
+      - name: Stáhnutí repozitáře
+        uses: actions/checkout@v4
 
-    - name: Instalace zavislosti
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc clang lld llvm grub-pc-bin grub-efi-amd64-bin xorriso mtools
+      - name: Instalace nástrojů pro DOS (NASM a mtools)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm mtools dosfstools
 
-    - name: Kompilace jadra
-      run: |
-        cd linux-7.0.3
-        make ARCH=x86_64 LLVM=1 defconfig
-        make ARCH=x86_64 LLVM=1 kvm_guest.config
-        
-        # Nastaveni pro lepsi bootovani v Limbu
-        ./scripts/config -e CONFIG_VGA_CONSOLE
-        ./scripts/config -e CONFIG_FRAMEBUFFER_CONSOLE
-        ./scripts/config -e CONFIG_BLK_DEV_INITRD
-        make ARCH=x86_64 LLVM=1 olddefconfig
-        
-        make ARCH=x86_64 LLVM=1 -j$(nproc)
+      - name: Kompilace vlastního OmniX programu
+        run: |
+          # Zkompiluje tvůj Assembly kód do spustitelného DOS programu
+          nasm -f bin omnix.asm -o OMNIX.COM
 
-    - name: Tvorba RootFS (Init programu)
-      run: |
-        mkdir -p rootfs
-        
-        # Vytvoření malého init programu v C!
-        cat << 'CCODE' > rootfs/init.c
-        #include <stdio.h>
-        #include <unistd.h>
-        
-        int main() {
-            printf("\n\n=======================================\n");
-            printf("   VITEJ V OMNIX OS (Uzivatelsky rezim)!\n");
-            printf("=======================================\n");
-            printf("Jadro uspesne nacetlo nas INIT program.\n");
-            printf("Dalsi krok: Spusteni Pythonu...\n\n");
-            
-            while(1) {
-                sleep(1); // Zabrání pádu systému, poběží to navždy
-            }
-            return 0;
-        }
-        CCODE
-        
-        # Zkompilování do binárky jménem "init" (staticky linkované)
-        gcc -static rootfs/init.c -o rootfs/init
-        rm rootfs/init.c
-        
-        # Zabalení do initramfs (tohle jádro sežere jako svůj disk)
-        cd rootfs
-        find . | cpio -o -H newc | gzip > ../initramfs.cpio.gz
-        cd ..
+      - name: Vytvoření obrazu disku (IMG) pro Limbo
+        run: |
+          # Vytvoří prázdný 20MB virtuální disk
+          dd if=/dev/zero of=omnix_drive.img bs=1M count=20
+          
+          # Naformátuje disk na starý dobrý FAT16 (aby ho DOS přečetl)
+          mkfs.fat -F 16 omnix_drive.img
+          
+          # Zkopíruje tvůj zkompilovaný program na disk
+          mcopy -i omnix_drive.img OMNIX.COM ::/
+          
+          # Zkopíruje originální složku MS-DOS na disk
+          mcopy -i omnix_drive.img -s MS-DOS ::/
 
-    - name: Tvorba bootovaciho ISO
-      run: |
-        mkdir -p isodir/boot/grub
-        cp linux-7.0.3/arch/x86/boot/bzImage isodir/boot/
-        cp initramfs.cpio.gz isodir/boot/
-        
-        # GRUB menu s načtením našeho nového RootFS (initrd)
-        cat << 'GRUB' > isodir/boot/grub/grub.cfg
-        set timeout=3
-        menuentry "OmniX OS (Core)" {
-            linux /boot/bzImage console=tty0
-            initrd /boot/initramfs.cpio.gz
-        }
-        GRUB
-        
-        grub-mkrescue -o OmniX-OS.iso isodir
-
-    - name: Ulozeni ISO na GitHub
-      uses: actions/upload-artifact@v4
-      with:
-        name: omnix-os-iso
-        path: OmniX-OS.iso
+      - name: Nahrání hotového disku ke stažení
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmniX-DOS-Drive
+          path: omnix_drive.img
