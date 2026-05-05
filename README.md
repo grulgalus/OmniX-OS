@@ -1,9 +1,9 @@
 # OmniX OS
 
 <p align="center">
-  <img src="res/logo_purple.png" alt="OmniX OS Purple Logo" width="350"/>
+  <img src="res/omnix_logo_purple.png" alt="OmniX OS Purple Logo" width="350"/>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="res/logo_silver.png" alt="OmniX OS Silver Logo" width="250"/>
+  <img src="res/omnix_logo_silver.png" alt="OmniX OS Silver Logo" width="250"/>
 </p>
 
 **OmniX OS** je vlastní, nezávislý operační systém (bare-metal) vyvíjený od nuly v jazyce Assembly (NASM). 
