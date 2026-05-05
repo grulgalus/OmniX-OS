@@ -1,4 +1,3 @@
-#[link_section = ".text._start"]
 #![no_std]
 #![no_main]
 
@@ -17,7 +16,6 @@ fn clear_screen() {
     for y in 0..VGA_HEIGHT {
         for x in 0..VGA_WIDTH {
             unsafe {
-                // Smaže obrazovku (0x0F00 = černá barva, bílý text, a mezera jako znak)
                 *VGA_BUFFER.offset((y * VGA_WIDTH + x) as isize) = 0x0F00 | b' ' as u16;
             }
         }
@@ -27,21 +25,19 @@ fn clear_screen() {
 
 fn print_char(c: u8) {
     unsafe {
-        if c == b'\n' { // Odřádkování (Enter)
+        if c == b'\n' {
             CURSOR_Y += 1;
             CURSOR_X = 0;
-        } else if c == 0x08 { // Krok zpět (Backspace)
+        } else if c == 0x08 {
             if CURSOR_X > 0 {
                 CURSOR_X -= 1;
                 *VGA_BUFFER.offset((CURSOR_Y * VGA_WIDTH + CURSOR_X) as isize) = 0x0F00 | b' ' as u16;
             }
-        } else { // Obyčejný znak
-            // 0x0D00 je tvá fialová barva (Light Magenta)
+        } else {
             *VGA_BUFFER.offset((CURSOR_Y * VGA_WIDTH + CURSOR_X) as isize) = 0x0D00 | c as u16;
             CURSOR_X += 1;
         }
 
-        // Pokud dojdeme na konec řádku
         if CURSOR_X >= VGA_WIDTH {
             CURSOR_X = 0;
             CURSOR_Y += 1;
@@ -56,15 +52,12 @@ fn print_str(s: &str) {
 }
 
 // --- 2. OVLADAČ KLÁVESNICE ---
-
-// Funkce pro čtení elektřiny z hardwarového portu procesoru
 unsafe fn inb(port: u16) -> u8 {
     let result: u8;
     asm!("in al, dx", out("al") result, in("dx") port, options(nomem, nostack, preserves_flags));
     result
 }
 
-// Překlad "Scancodů" (čísel z klávesnice) na normální písmena
 fn scancode_to_ascii(scancode: u8) -> Option<u8> {
     match scancode {
         0x02..=0x0A => Some(b"123456789"[scancode as usize - 2]),
@@ -75,9 +68,9 @@ fn scancode_to_ascii(scancode: u8) -> Option<u8> {
         0x20 => Some(b'd'), 0x21 => Some(b'f'), 0x22 => Some(b'g'), 0x23 => Some(b'h'),
         0x24 => Some(b'j'), 0x25 => Some(b'k'), 0x26 => Some(b'l'), 0x2C => Some(b'z'),
         0x2D => Some(b'x'), 0x2E => Some(b'c'), 0x2F => Some(b'v'), 0x30 => Some(b'b'),
-        0x31 => Some(b'n'), 0x32 => Some(b'm'), 0x39 => Some(b' '), // Mezera
-        0x1C => Some(b'\n'), // Enter
-        0x0E => Some(0x08),  // Backspace
+        0x31 => Some(b'n'), 0x32 => Some(b'm'), 0x39 => Some(b' '),
+        0x1C => Some(b'\n'),
+        0x0E => Some(0x08),
         _ => None,
     }
 }
@@ -89,32 +82,26 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
+// TADY MUSÍ BÝT TEN LINK SECTION! Hned nad pub extern "C" fn _start()
+#[link_section = ".text._start"]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    clear_screen(); // Připraví čistou obrazovku
+    clear_screen();
     
-    // UI Instalačního menu
     print_str("==================================\n");
     print_str("     OMNIX OS INSTALATOR v0.1     \n");
     print_str("==================================\n");
-    print_str("Krok 1: Klávesnice inicializovana.\n\n");
+    print_str("Krok 1: Klavesnice inicializovana.\n\n");
     print_str("Napis neco pro otestovani PS/2 ovladace:\n> ");
 
-    // Nekonečná smyčka - naslouchá klávesnici
     loop {
         unsafe {
-            // Port 0x64 je "Status". Zeptáme se ho: Má klávesnice nová data?
             let status = inb(0x64);
-            
-            // Pokud je nejnižší bit 1, znamená to "Ano, někdo něco zmáčkl!"
             if (status & 1) != 0 {
-                // Přečteme, JAKÉ tlačítko zmáčkl (Port 0x60)
                 let scancode = inb(0x60);
-                
-                // Pokud je scancode pod 0x80, znamená to, že tlačítko bylo ZMÁČKNUTO (ne puštěno)
                 if scancode < 0x80 {
                     if let Some(c) = scancode_to_ascii(scancode) {
-                        print_char(c); // Vypíše znak na obrazovku!
+                        print_char(c);
                     }
                 }
             }
