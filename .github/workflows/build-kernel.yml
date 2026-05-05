@@ -1,31 +1,41 @@
-name: Build OmniX OS (Boot Sector Edition)
+name: Build OmniX OS
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Stáhnutí repozitáře
-        uses: actions/checkout@v4
+      - name: Checkout repozitáře
+        uses: actions/checkout@v3
 
-      - name: Instalace NASM
+      - name: Instalace NASM (pro Assembly)
         run: sudo apt-get update && sudo apt-get install -y nasm
 
-      - name: Kompilace vlastního OmniX OS
+      - name: Instalace Rustu (Nightly) pro Bare-Metal
+        run: |
+          rustup default nightly
+          rustup target add i686-unknown-linux-gnu
+
+      - name: Kompilace OmniX OS (Bootloader + Rust Kernel)
         run: |
           nasm -f bin omnix-files/boot.asm -o boot.bin
-          nasm -f bin omnix-files/kernel.asm -o kernel.bin
+
+          rustc --target i686-unknown-linux-gnu -C opt-level=2 -C relocation-model=static -C code-model=kernel --emit obj omnix-files/kernel.rs -o kernel.o
+
+          ld -m elf_i386 -Ttext 0x8000 --oformat binary kernel.o -o kernel.bin
+
           cat boot.bin kernel.bin > os_combined.bin
           dd if=/dev/zero of=omnix_os.img bs=1024 count=1440
           dd if=os_combined.bin of=omnix_os.img conv=notrunc
 
       - name: Nahrání hotového OS ke stažení
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: OmniX-Bootable-Floppy
+          name: omnix-os-image
           path: omnix_os.img
