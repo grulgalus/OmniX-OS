@@ -1,0 +1,11 @@
+[package]
+name = "omnix_os"
+version = "0.4.0"
+edition = "2021"
+
+# V OS nemůžeme mít standardní ošetřování chyb, prostě ho při chybě "zmrazíme"
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

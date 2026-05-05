@@ -1,11 +1,9 @@
 org 0x7C00
 bits 16
 
-jmp 0x0000:start
-
 start:
-    ; Příprava paměti a zásobníku
-    cli 
+    ; 1. Příprava paměti
+    cli
     xor ax, ax
     mov ds, ax
     mov es, ax
@@ -13,47 +11,69 @@ start:
     mov sp, 0x7C00
     sti
 
-    ; BIOS nám v registru DL předal číslo disku, uložíme si ho
-    mov [boot_drive], dl
+    ; 2. Povolení A20 linky (Hardwarový trik pro zpřístupnění více než 1MB RAM)
+    in al, 0x92
+    or al, 2
+    out 0x92, al
 
-    ; Vypíše: "Zavadim OmniX OS..."
-    mov si, msg_loading
-    call print_string
+    ; 3. Načtení Rust Kernelu z disku
+    mov ah, 0x02
+    mov al, 30          ; Načteme 30 sektorů (15 KB prostoru pro náš Rust kód)
+    mov ch, 0           ; Válec 0
+    mov dh, 0           ; Hlava 0
+    mov cl, 2           ; Začneme číst od 2. sektoru
+    mov bx, 0x8000      ; Načteme to na adresu 0x8000
+    int 0x13
+    jc disk_error       ; Pokud se to nepovede, zastav
 
-    ; --- NAČTENÍ JÁDRA Z DISKU (Magie INT 13h) ---
-    mov ah, 0x02       ; Funkce BIOSu: Čtení sektorů
-    mov al, 4          ; Kolik sektorů načíst (4 sektory = 2 KB prostoru pro tvé jádro)
-    mov ch, 0          ; Válec (Cylinder) 0
-    mov dh, 0          ; Hlava (Head) 0
-    mov cl, 2          ; Začni číst od 2. sektoru (v 1. sektoru je tento bootloader)
-    mov dl, [boot_drive] ; Z jakého disku čteme
-    mov bx, 0x8000     ; Kam do paměti to načteme (0x8000)
-    int 0x13           ; Zavolej BIOS!
-    jc disk_error      ; Pokud nastala chyba disku, skoč na error
-
-    ; --- SKOK DO TVÉHO JÁDRA! ---
-    jmp 0x8000         ; Freedom! Předáváme velení tvému Kernelu!
+    ; 4. MAGIE: PŘECHOD DO 32-BIT PROTECTED MODE
+    cli                 ; Vypnout BIOS přerušení (už je nikdy neuvidíme)
+    lgdt [gdt_descriptor] ; Načíst tabulku GDT
+    
+    mov eax, cr0
+    or eax, 0x1         ; Přepnout tajný bit v procesoru na 32-bit!
+    mov cr0, eax
+    
+    ; Skok do 32-bitového prostoru (vyčistí frontu instrukcí procesoru)
+    jmp 0x08:start32    
 
 disk_error:
-    mov si, msg_error
-    call print_string
-    hlt                ; Zaseknutí při chybě
+    hlt                 ; Zaseknutí při chybě
 
-print_string:
-.loop:
-    lodsb
-    or al, al
-    jz .done
-    mov ah, 0x0E
-    int 0x10
-    jmp .loop
-.done:
-    ret
+; -------------------------------------------
+; ZDE ZAČÍNÁ 32-BITOVÝ SVĚT!
+; -------------------------------------------
+bits 32
+start32:
+    ; Musíme říct procesoru, kde teď leží data (0x10 je offset v naší GDT)
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov esp, 0x90000    ; Nastavíme bezpečný a velký zásobník
 
-boot_drive db 0
-msg_loading db 'Zavadim OmniX OS Stage 2...', 13, 10, 0
-msg_error db 'Chyba cteni disku!', 13, 10, 0
+    ; Předáme velení našemu Rust Kernelu!
+    jmp 0x8000          
 
-; Magický podpis pro Limbo
+; -------------------------------------------
+; GDT (Global Descriptor Table)
+; (Tohle procesor potřebuje, aby věděl, co je 32-bitový kód a co jsou data)
+; -------------------------------------------
+align 4
+gdt_start:
+    dq 0x0              ; Nulový deskriptor (povinné)
+gdt_code:
+    dw 0xFFFF, 0x0000, 0x9A00, 0x00CF ; Deskriptor kódu (Index 0x08)
+gdt_data:
+    dw 0xFFFF, 0x0000, 0x9200, 0x00CF ; Deskriptor dat (Index 0x10)
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1
+    dd gdt_start
+
+; Magický konec bootloaderu pro BIOS
 times 510-($-$$) db 0
 dw 0xAA55
