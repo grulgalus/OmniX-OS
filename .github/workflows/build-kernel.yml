@@ -18,7 +18,7 @@ jobs:
 
       - name: Kompilace vlastního OmniX OS
         run: |
-          nasm -f bin omnix.asm -o omnix_os.img
+          nasm -f bin omnix-files/omnix.asm -o omnix_os.img
 
       - name: Nahrání hotového OS ke stažení
         uses: actions/upload-artifact@v4
