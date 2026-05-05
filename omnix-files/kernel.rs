@@ -1,3 +1,4 @@
+#[link_section = ".text._start"]
 #![no_std]
 #![no_main]
 

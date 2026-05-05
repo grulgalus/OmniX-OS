@@ -28,7 +28,7 @@ jobs:
 
           rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C code-model=kernel --emit obj omnix-files/kernel.rs -o kernel.o
 
-          ld -m elf_i386 -Ttext 0x8000 --oformat binary kernel.o -o kernel.bin
+          ld -m elf_i386 -T omnix-files/linker.ld --oformat binary kernel.o -o kernel.bin
 
           cat boot.bin kernel.bin > os_combined.bin
           dd if=/dev/zero of=omnix_os.img bs=1024 count=1440
