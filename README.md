@@ -1,29 +1,32 @@
-# 💾 OmniX OS (MS-DOS Edition)
+# OmniX OS
 
-Vítejte v repozitáři **OmniX OS**! Tento projekt začal jako experiment s vlastním linuxovým jádrem, ale nakonec se vyvinul v něco mnohem více retro a epického – operační systém postavený přímo na **oficiálních zdrojových kódech Microsoft MS-DOS**.
+<p align="center">
+  <img src="res/logo_purple.png" alt="OmniX OS Purple Logo" width="350"/>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="res/logo_silver.png" alt="OmniX OS Silver Logo" width="250"/>
+</p>
 
-Celý vývoj, kompilace a správa tohoto repozitáře probíhá hardcore stylem: čistě na Android tabletu přes Termux! 📱💻
+**OmniX OS** je vlastní, nezávislý operační systém (bare-metal) vyvíjený od nuly v jazyce Assembly (NASM). 
 
-## ✨ O projektu
-OmniX OS je oživená legenda. Bere původní, desítky let staré zdrojáky (napsané v Assembly a starém C) a pomocí moderní cloudové automatizace je překládá do funkčního, bootovacího systému. Cílem je mít bleskově rychlý, nenáročný OS, který nastartuje v emulátoru v řádu milisekund.
+> **⚠️ Důležité:** Tento systém **NENÍ postavený na MS-DOSu ani Linuxu!** Nejedná se o žádnou modifikaci existujícího systému, ale o kompletně vlastní architekturu od nejnižší úrovně hardwaru.
 
-## 🚀 Jak to funguje (Automatizace)
-Abychom nemuseli složitě hledat 40 let staré kompilátory pro Android, využíváme sílu cloudu:
-1. Zdrojové kódy MS-DOSu (`.ASM`, `MAKEFILE`, `RUNME.BAT`) jsou uložené v tomto repozitáři.
-2. O kompilaci se stará **GitHub Actions** (skripty ve složce `.github/workflows`).
-3. Při každé úpravě kódu se na serverech GitHubu automaticky spustí build, který zdrojáky přeloží.
-4. Výsledkem je hotový bootovací obraz (`.img` nebo `.iso`), který si stačí stáhnout.
+## 🚀 Architektura a Funkce
 
-## 🎮 Jak si OmniX OS spustit
-Systém je primárně stavěn pro běh v aplikaci **Limbo x86 Emulator** na Androidu.
-1. Otevřete záložku **Actions** nahoře v tomto repozitáři.
-2. Rozklikněte nejnovější zelený build a stáhněte si z něj výsledný "Artifact" (obraz disku).
-3. Otevřete aplikaci Limbo ve svém telefonu/tabletu.
-4. Vložte stažený soubor jako *Floppy* (disketu) nebo *Hard Disk*.
-5. Nastartujte virtuální stroj a užijte si legendární příkazovou řádku!
+Projekt v současné době využívá pokročilou **dvojfázovou (Two-Stage) architekturu**:
 
-## 📜 Historie vývoje
-Tento projekt vznikl krví, potem a slzami v terminálu. Máme za sebou tvrdé bitvy s Gitem, včetně:
-- Pokusu o upload gigabajtového Arch Linuxu přes mobilní terminál (a následné zjištění, že GitHub má tvrdý limit 100 MB 🛑).
-- Cestování v čase přes `git log` a `checkout` pro záchranu smazaných dat.
-- Finálního znovuzrození repozitáře do čisté MS-DOS formy.
+*   **Stage 1 (Bootloader):** Vlastní zavaděč (`boot.asm`), který se vejde do prvních 512 bajtů (Boot Sektor) a jehož úkolem je bezpečně načíst jádro do paměti RAM a předat mu řízení.
+*   **Stage 2 (Kernel):** Vlastní jádro (`kernel.asm`) běžící na paměťové adrese `0x8000`. Poskytuje neomezený prostor pro rozšiřování kódu.
+*   **Vlastní Shell:** Interaktivní příkazový řádek s podporou zadávání textu, mazání (Backspace) a zpracováním příkazů.
+*   **Automatický CI/CD Build:** Celý OS se automaticky sestavuje pomocí GitHub Actions do čistého obrazu diskety (`omnix_os.img`).
+
+## 🛠️ Jak spustit OmniX OS
+
+1. Stáhni si zkompilovaný obraz disku `omnix_os.img` (generuje se automaticky při každé úpravě kódu).
+2. Otevři libovolný x86 emulátor:
+   * **Na Androidu:** Doporučujeme *Limbo PC Emulator*.
+   * **Na PC:** QEMU, VirtualBox, nebo VMware.
+3. Vlož soubor `omnix_os.img` do virtuální **disketové mechaniky (Floppy Drive)**.
+4. Spusť virtuální stroj a systém okamžitě nabootuje!
+
+## 🎨 Zdroje a Grafika
+Ve složce [`res/`](res/) najdeš oficiální artworky a grafiku pro OmniX OS, včetně hlavní (fialové) a alternativní (stříbrné) verze loga, které vidíš nahoře.
