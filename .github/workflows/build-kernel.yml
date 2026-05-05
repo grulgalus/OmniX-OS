@@ -26,7 +26,7 @@ jobs:
         run: |
           nasm -f bin omnix-files/boot.asm -o boot.bin
 
-          rustc --target i686-unknown-linux-gnu -C opt-level=2 -C relocation-model=static -C code-model=kernel --emit obj omnix-files/kernel.rs -o kernel.o
+          rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C code-model=kernel --emit obj omnix-files/kernel.rs -o kernel.o
 
           ld -m elf_i386 -Ttext 0x8000 --oformat binary kernel.o -o kernel.bin
 
