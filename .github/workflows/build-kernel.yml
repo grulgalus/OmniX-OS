@@ -25,8 +25,8 @@ jobs:
 
       - name: Vytvoření obrazu disku (IMG) pro Limbo
         run: |
-          # Vytvoří prázdný 20MB virtuální disk
-          dd if=/dev/zero of=omnix_drive.img bs=1M count=20
+          # Vytvoří prázdný 100MB virtuální disk
+          dd if=/dev/zero of=omnix_drive.img bs=1M count=100
           
           # Naformátuje disk na starý dobrý FAT16 (aby ho DOS přečetl)
           mkfs.fat -F 16 omnix_drive.img
