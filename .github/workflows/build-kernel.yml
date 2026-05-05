@@ -18,7 +18,14 @@ jobs:
 
       - name: Kompilace vlastního OmniX OS
         run: |
-          nasm -f bin omnix-files/omnix.asm -o omnix_os.img
+          # 1. Zkompiluje tvůj kód (vznikne malý 512b soubor)
+          nasm -f bin omnix-files/omnix.asm -o boot.bin
+          
+          # 2. Vytvoří prázdnou disketu o velikosti přesně 1.44 MB (tohle Limbo vyžaduje!)
+          dd if=/dev/zero of=omnix_os.img bs=1024 count=1440
+          
+          # 3. Vloží tvůj bootovací kód na úplný začátek téhle diskety
+          dd if=boot.bin of=omnix_os.img conv=notrunc
 
       - name: Nahrání hotového OS ke stažení
         uses: actions/upload-artifact@v4
