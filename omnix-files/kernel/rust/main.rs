@@ -17,9 +17,9 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-#[link_section = ".text._start"]
+// Zde začíná náš nový, profi OS
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
+pub extern "C" fn kernel_main(_magic: u32, _info: u32) -> ! {
     vga::set_color(0x0F, 0x05);
     vga::clear_screen();
     

@@ -14,14 +14,6 @@ start:
     or al, 2
     out 0x92, al
 
-    mov ah, 0x02
-    mov al, 60
-    mov ch, 0
-    mov dh, 0
-    mov cl, 2
-    mov bx, 0x8000
-    int 0x13
-
     cli
     lgdt [gdt_descriptor]
     mov eax, cr0
@@ -54,4 +46,4 @@ start32:
     mov gs, ax
     mov ss, ax
     mov esp, 0x90000
-    jmp 0x8000
+    jmp 0x7E00
