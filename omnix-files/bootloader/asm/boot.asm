@@ -10,16 +10,10 @@ start:
     mov sp, 0x7C00
     sti
 
-    mov [BOOT_DRIVE], dl
-
-    mov si, msg_boot
-    call print_string
-
     in al, 0x92
     or al, 2
     out 0x92, al
 
-load_kernel:
     mov ah, 0x02
     mov al, 60
     mov ch, 0
@@ -27,45 +21,13 @@ load_kernel:
     mov cl, 2
     mov bx, 0x8000
     int 0x13
-    jc disk_retry
-    jmp protected_mode
 
-disk_retry:
-    dec byte [RETRIES]
-    jz disk_error
-    xor ax, ax
-    int 0x13
-    jmp load_kernel
-
-print_string:
-    mov ah, 0x0E
-.loop:
-    lodsb
-    test al, al
-    jz .done
-    int 0x10
-    jmp .loop
-.done:
-    ret
-
-protected_mode:
     cli
     lgdt [gdt_descriptor]
     mov eax, cr0
     or eax, 0x1
     mov cr0, eax
     jmp 0x08:start32
-
-disk_error:
-    mov si, msg_err
-    call print_string
-    cli
-    hlt
-
-BOOT_DRIVE db 0
-RETRIES db 5
-msg_boot db "Loading OmniX OS...", 13, 10, 0
-msg_err db "Disk Error!", 0
 
 align 4
 gdt_start:

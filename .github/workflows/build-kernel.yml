@@ -25,7 +25,7 @@ jobs:
       - name: Kompilace OmniX OS
         run: |
           nasm -f bin omnix-files/bootloader/asm/boot.asm -o boot.bin
-          rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C no-redzone=y -C code-model=kernel --emit obj omnix-files/kernel/rust/kernel.rs -o kernel.o
+          rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C no-redzone=y -C code-model=kernel --emit obj omnix-files/kernel/rust/main.rs -o kernel.o
           ld -m elf_i386 -T omnix-files/linker.ld kernel.o -o kernel.bin
           cat boot.bin kernel.bin > os_combined.bin
           dd if=/dev/zero of=omnix_os.img bs=1024 count=1440
