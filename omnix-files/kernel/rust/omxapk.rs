@@ -11,7 +11,7 @@ pub fn is_valid_app(header: &OmxApkHeader) -> bool {
 }
 
 pub fn run_application(name: &str) {
-    crate::drivers::vga::print_str("Spoustim .omxapk: ");
-    crate::drivers::vga::print_str(name);
-    crate::drivers::vga::print_str("\n");
+    crate::vga::print_str("Spoustim .omxapk: ");
+    crate::vga::print_str(name);
+    crate::vga::print_str("\n");
 }
