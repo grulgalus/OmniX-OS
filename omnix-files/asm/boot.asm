@@ -18,7 +18,7 @@ start:
 
     ; 3. Načtení Rust Kernelu z disku
     mov ah, 0x02
-    mov al, 30          ; Načteme 30 sektorů (15 KB prostoru pro náš Rust kód)
+    mov al, 60          ; Načteme 60 sektorů (30 KB prostoru pro náš Rust kód)
     mov ch, 0           ; Válec 0
     mov dh, 0           ; Hlava 0
     mov cl, 2           ; Začneme číst od 2. sektoru

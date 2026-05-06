@@ -4,7 +4,6 @@
 use core::panic::PanicInfo;
 use core::arch::asm;
 
-// --- 1. OVLADAČ GRAFIKY (VGA) ---
 const VGA_WIDTH: usize = 80;
 const VGA_HEIGHT: usize = 25;
 const VGA_BUFFER: *mut u16 = 0xb8000 as *mut u16;
@@ -28,7 +27,7 @@ fn print_char(c: u8) {
         if c == b'\n' {
             CURSOR_Y += 1;
             CURSOR_X = 0;
-        } else if c == 0x08 {
+        } else if c == 0x08 { // Backspace
             if CURSOR_X > 0 {
                 CURSOR_X -= 1;
                 *VGA_BUFFER.offset((CURSOR_Y * VGA_WIDTH + CURSOR_X) as isize) = 0x0F00 | b' ' as u16;
@@ -51,11 +50,16 @@ fn print_str(s: &str) {
     }
 }
 
-// --- 2. OVLADAČ KLÁVESNICE ---
+// Čtení z portu (PS/2)
 unsafe fn inb(port: u16) -> u8 {
     let result: u8;
     asm!("in al, dx", out("al") result, in("dx") port, options(nomem, nostack, preserves_flags));
     result
+}
+
+// Zápis do portu (bude potřeba pro .omxapk)
+unsafe fn outb(port: u16, data: u8) {
+    asm!("out dx, al", in("dx") port, in("al") data, options(nomem, nostack, preserves_flags));
 }
 
 fn scancode_to_ascii(scancode: u8) -> Option<u8> {
@@ -75,14 +79,17 @@ fn scancode_to_ascii(scancode: u8) -> Option<u8> {
     }
 }
 
-// --- 3. HLAVNÍ JÁDRO ---
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    print_str("FATAL ERROR: Kernel Panic!");
+    // V případě chyby vypíše modré pozadí, bílý text (Blue Screen of Death!)
+    for i in 0..(80*25) {
+        unsafe { *VGA_BUFFER.offset(i) = 0x1F00 | b' ' as u16; }
+    }
+    unsafe { CURSOR_X = 0; CURSOR_Y = 0; }
+    print_str("OMNIX OS PANIC!");
     loop {}
 }
 
-// TADY MUSÍ BÝT TEN LINK SECTION! Hned nad pub extern "C" fn _start()
 #[link_section = ".text._start"]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
@@ -91,8 +98,9 @@ pub extern "C" fn _start() -> ! {
     print_str("==================================\n");
     print_str("     OMNIX OS INSTALATOR v0.1     \n");
     print_str("==================================\n");
-    print_str("Krok 1: Klavesnice inicializovana.\n\n");
-    print_str("Napis neco pro otestovani PS/2 ovladace:\n> ");
+    print_str("Podpora pro .omxapk: Pripraveno.\n");
+    print_str("Jadro nacteno uspesne!\n\n");
+    print_str("> ");
 
     loop {
         unsafe {
