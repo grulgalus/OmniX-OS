@@ -10,30 +10,80 @@ const VGA_BUFFER: *mut u16 = 0xb8000 as *mut u16;
 
 static mut CURSOR_X: usize = 0;
 static mut CURSOR_Y: usize = 0;
+static mut CURRENT_COLOR: u8 = 0x0F;
 
-fn clear_screen() {
-    for y in 0..VGA_HEIGHT {
-        for x in 0..VGA_WIDTH {
-            unsafe {
-                *VGA_BUFFER.offset((y * VGA_WIDTH + x) as isize) = 0x0F00 | b' ' as u16;
+unsafe fn outb(port: u16, data: u8) {
+    asm!("out dx, al", in("dx") port, in("al") data, options(nomem, nostack, preserves_flags));
+}
+
+unsafe fn inb(port: u16) -> u8 {
+    let result: u8;
+    asm!("in al, dx", out("al") result, in("dx") port, options(nomem, nostack, preserves_flags));
+    result
+}
+
+fn set_color(fg: u8, bg: u8) {
+    unsafe {
+        CURRENT_COLOR = (bg << 4) | fg;
+    }
+}
+
+fn update_cursor() {
+    unsafe {
+        let pos = (CURSOR_Y * VGA_WIDTH + CURSOR_X) as u16;
+        outb(0x3D4, 0x0F);
+        outb(0x3D5, (pos & 0xFF) as u8);
+        outb(0x3D4, 0x0E);
+        outb(0x3D5, ((pos >> 8) & 0xFF) as u8);
+    }
+}
+
+fn scroll() {
+    unsafe {
+        for y in 1..VGA_HEIGHT {
+            for x in 0..VGA_WIDTH {
+                let from = y * VGA_WIDTH + x;
+                let to = (y - 1) * VGA_WIDTH + x;
+                *VGA_BUFFER.add(to) = *VGA_BUFFER.add(from);
             }
         }
+        let last_line = (VGA_HEIGHT - 1) * VGA_WIDTH;
+        let blank = (CURRENT_COLOR as u16) << 8 | (b' ' as u16);
+        for x in 0..VGA_WIDTH {
+            *VGA_BUFFER.add(last_line + x) = blank;
+        }
+        CURSOR_Y = VGA_HEIGHT - 1;
     }
-    unsafe { CURSOR_X = 0; CURSOR_Y = 0; }
+}
+
+fn clear_screen() {
+    unsafe {
+        let blank = (CURRENT_COLOR as u16) << 8 | (b' ' as u16);
+        for i in 0..(VGA_WIDTH * VGA_HEIGHT) {
+            *VGA_BUFFER.add(i) = blank;
+        }
+        CURSOR_X = 0;
+        CURSOR_Y = 0;
+        update_cursor();
+    }
 }
 
 fn print_char(c: u8) {
     unsafe {
         if c == b'\n' {
-            CURSOR_Y += 1;
             CURSOR_X = 0;
-        } else if c == 0x08 { // Backspace
+            CURSOR_Y += 1;
+        } else if c == 0x08 {
             if CURSOR_X > 0 {
                 CURSOR_X -= 1;
-                *VGA_BUFFER.offset((CURSOR_Y * VGA_WIDTH + CURSOR_X) as isize) = 0x0F00 | b' ' as u16;
+                *VGA_BUFFER.add(CURSOR_Y * VGA_WIDTH + CURSOR_X) = (CURRENT_COLOR as u16) << 8 | (b' ' as u16);
+            } else if CURSOR_Y > 0 {
+                CURSOR_Y -= 1;
+                CURSOR_X = VGA_WIDTH - 1;
+                *VGA_BUFFER.add(CURSOR_Y * VGA_WIDTH + CURSOR_X) = (CURRENT_COLOR as u16) << 8 | (b' ' as u16);
             }
         } else {
-            *VGA_BUFFER.offset((CURSOR_Y * VGA_WIDTH + CURSOR_X) as isize) = 0x0D00 | c as u16;
+            *VGA_BUFFER.add(CURSOR_Y * VGA_WIDTH + CURSOR_X) = (CURRENT_COLOR as u16) << 8 | (c as u16);
             CURSOR_X += 1;
         }
 
@@ -41,6 +91,11 @@ fn print_char(c: u8) {
             CURSOR_X = 0;
             CURSOR_Y += 1;
         }
+
+        if CURSOR_Y >= VGA_HEIGHT {
+            scroll();
+        }
+        update_cursor();
     }
 }
 
@@ -48,18 +103,6 @@ fn print_str(s: &str) {
     for byte in s.bytes() {
         print_char(byte);
     }
-}
-
-// Čtení z portu (PS/2)
-unsafe fn inb(port: u16) -> u8 {
-    let result: u8;
-    asm!("in al, dx", out("al") result, in("dx") port, options(nomem, nostack, preserves_flags));
-    result
-}
-
-// Zápis do portu (bude potřeba pro .omxapk)
-unsafe fn outb(port: u16, data: u8) {
-    asm!("out dx, al", in("dx") port, in("al") data, options(nomem, nostack, preserves_flags));
 }
 
 fn scancode_to_ascii(scancode: u8) -> Option<u8> {
@@ -81,31 +124,33 @@ fn scancode_to_ascii(scancode: u8) -> Option<u8> {
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    // V případě chyby vypíše modré pozadí, bílý text (Blue Screen of Death!)
-    for i in 0..(80*25) {
-        unsafe { *VGA_BUFFER.offset(i) = 0x1F00 | b' ' as u16; }
-    }
-    unsafe { CURSOR_X = 0; CURSOR_Y = 0; }
-    print_str("OMNIX OS PANIC!");
+    set_color(0x0F, 0x04);
+    clear_screen();
+    print_str("FATAL KERNEL ERROR");
     loop {}
 }
 
 #[link_section = ".text._start"]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    set_color(0x0F, 0x00);
     clear_screen();
     
-    print_str("==================================\n");
-    print_str("     OMNIX OS INSTALATOR v0.1     \n");
-    print_str("==================================\n");
-    print_str("Podpora pro .omxapk: Pripraveno.\n");
-    print_str("Jadro nacteno uspesne!\n\n");
-    print_str("> ");
+    set_color(0x0B, 0x00);
+    print_str("OmniX OS Core v0.3\n");
+    set_color(0x0A, 0x00);
+    print_str("Initializing Subsystems...\n");
+    
+    set_color(0x0F, 0x00);
+    print_str("VGA Display: [OK]\n");
+    print_str("Keyboard: [OK]\n");
+    print_str("Interrupts: [PENDING]\n\n");
+    
+    print_str("admin@omnix:~> ");
 
     loop {
         unsafe {
-            let status = inb(0x64);
-            if (status & 1) != 0 {
+            if (inb(0x64) & 1) != 0 {
                 let scancode = inb(0x60);
                 if scancode < 0x80 {
                     if let Some(c) = scancode_to_ascii(scancode) {
