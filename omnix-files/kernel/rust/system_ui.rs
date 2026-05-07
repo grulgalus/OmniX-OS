@@ -104,22 +104,25 @@ unsafe fn process_command() {
 }
 
 unsafe fn push_history(text: &[u8], len: usize) {
+    let hist_ptr = addr_of_mut!(TERM_HIST) as *mut [u8; 22];
+    let lens_ptr = addr_of_mut!(TERM_HIST_LEN) as *mut usize;
+
     for i in 0..5 {
         for j in 0..22 {
-            let val = *TERM_HIST.get_unchecked(i + 1).get_unchecked(j);
-            let ptr = addr_of_mut!(TERM_HIST) as *mut [u8; 22];
-            (*ptr.add(i))[j] = val;
+            let val = (*hist_ptr.add(i + 1))[j];
+            (*hist_ptr.add(i))[j] = val;
         }
-        let len_ptr = addr_of_mut!(TERM_HIST_LEN) as *mut usize;
-        *len_ptr.add(i) = *len_ptr.add(i + 1);
+        *lens_ptr.add(i) = *lens_ptr.add(i + 1);
     }
+
     let l = if len > 22 { 22 } else { len };
-    for i in 0..l { 
-        let ptr = addr_of_mut!(TERM_HIST) as *mut [u8; 22];
-        (*ptr.add(5))[i] = *text.get_unchecked(i); 
+    let text_ptr = text.as_ptr();
+
+    for i in 0..l {
+        (*hist_ptr.add(5))[i] = *text_ptr.add(i);
     }
-    let len_ptr = addr_of_mut!(TERM_HIST_LEN) as *mut usize;
-    *len_ptr.add(5) = l;
+
+    *lens_ptr.add(5) = l;
 }
 
 fn draw_cursor(x: usize, y: usize) {

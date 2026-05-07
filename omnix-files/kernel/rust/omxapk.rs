@@ -4,6 +4,7 @@ use crate::keyboard;
 
 pub fn install_demo_app(lba: u32) {
     let mut apk = [0u8; 512];
+    
     apk[0] = b'O'; apk[1] = b'M'; apk[2] = b'X'; apk[3] = b'A';
     
     apk[10] = 0x01; apk[11] = 60; apk[12] = 40; apk[13] = 200; apk[14] = 120; apk[15] = 9; 
@@ -24,24 +25,43 @@ pub fn run_app(lba: u32) {
     let mut app_data = [0u8; 512];
     ata::read_sector(lba, &mut app_data);
 
-    if app_data[0] != b'O' || app_data[1] != b'M' || app_data[2] != b'X' || app_data[3] != b'A' { return; }
+    if app_data[0] != b'O' || app_data[1] != b'M' || app_data[2] != b'X' || app_data[3] != b'A' { 
+        return; 
+    }
 
     loop {
         vga::clear_screen(0); 
 
         let mut pc = 10; 
-        while pc < 500 { // Kontrola limitu, aby kompilator neplakal
+        let data_ptr = app_data.as_ptr(); // <- TADY bereme raw pointer na zacatek pole
+
+        while pc < 500 { 
             unsafe {
-                let opcode = *app_data.get_unchecked(pc);
+                let opcode = *data_ptr.add(pc); // Nacteme instrukci pres pointer
+
                 match opcode {
                     0x01 => { 
-                        vga::draw_rect(*app_data.get_unchecked(pc+1) as usize, *app_data.get_unchecked(pc+2) as usize, *app_data.get_unchecked(pc+3) as usize, *app_data.get_unchecked(pc+4) as usize, *app_data.get_unchecked(pc+5));
+                        // Rozepsano pro prehlednost misto dlouheho radku
+                        let x = *data_ptr.add(pc + 1) as usize;
+                        let y = *data_ptr.add(pc + 2) as usize;
+                        let w = *data_ptr.add(pc + 3) as usize;
+                        let h = *data_ptr.add(pc + 4) as usize;
+                        let color = *data_ptr.add(pc + 5);
+                        
+                        vga::draw_rect(x, y, w, h, color);
                         pc += 6;
                     }
                     0x02 => { 
-                        let len = *app_data.get_unchecked(pc+3) as usize;
+                        let x = *data_ptr.add(pc + 1) as usize;
+                        let y = *data_ptr.add(pc + 2) as usize;
+                        let len = *data_ptr.add(pc + 3) as usize;
+                        
                         if pc + 4 + len <= 512 {
-                            vga::draw_str(&app_data[pc+4 .. pc+4+len], *app_data.get_unchecked(pc+1) as usize, *app_data.get_unchecked(pc+2) as usize, 15);
+                            // Vezmeme adresu zacatku textu a udelame z ni bezpecny string/slice
+                            let text_ptr = data_ptr.add(pc + 4);
+                            let text = core::slice::from_raw_parts(text_ptr, len);
+                            
+                            vga::draw_str(text, x, y, 15);
                         }
                         pc += 4 + len;
                     }
