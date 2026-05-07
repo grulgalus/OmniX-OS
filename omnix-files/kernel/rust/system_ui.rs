@@ -163,6 +163,6 @@ pub fn draw_start_menu() {
 }
 
 pub fn update_clock() {
-    let time = unsafe { crate::drivers::rtc::get_time() };
-    vga::draw_str(time.as_bytes(), 280, 189, 0);
+    let time = unsafe { crate::rtc::get_time() };
+    crate::vga::draw_str(time, 280, 189, 0);
 }

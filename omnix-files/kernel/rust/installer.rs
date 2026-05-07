@@ -2,7 +2,7 @@ use crate::vga;
 use crate::ata;
 use crate::system_ui;
 use crate::keyboard;
-use crate::omxapk; // Pridame nas engine
+use crate::omxapk;
 
 pub fn run_installer() {
     vga::clear_screen(1); 
@@ -22,7 +22,13 @@ pub fn run_installer() {
     vga::draw_rect(60, 50, 200, 100, 7); 
     vga::draw_rect(60, 50, 200, 15, 1); 
     vga::draw_str(b"INSTALLING OMNIX OS", 80, 54, 15);
-    let mut disk_data = [0u8; 512];
+
+    let disk_data = {
+        let mut d = [0u8; 512];
+        d[0] = 0x4F; d[1] = 0x4D;
+        d
+    };
+
     vga::draw_rect(140, 80, 50, 10, 7);
 
     for i in 0..101 {
@@ -37,7 +43,6 @@ pub fn run_installer() {
         ata::write_sector(i as u32, &disk_data);
     }
 
-    // TADY ZAPISUJEME NĂSI PRVNI APLIKACI NA SEKTOR 200!
     omxapk::install_demo_app(200);
 
     vga::draw_str(b"DONE!", 140, 130, 0);

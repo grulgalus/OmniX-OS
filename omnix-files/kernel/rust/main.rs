@@ -9,16 +9,18 @@ pub mod ata;
 pub mod mouse;
 #[path = "../../drivers/rust/keyboard.rs"]
 pub mod keyboard;
+#[path = "../../drivers/rust/rtc.rs"]
+pub mod rtc;
 
 pub mod installer;
 pub mod system_ui;
-pub mod omxapk; // <--- TADY JE NAS NOVY APP ENGINE
+pub mod omxapk;
 
 use core::panic::PanicInfo;
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop { unsafe { core::arch::asm!("hlt"); } }
+fn panic(_info: &PanicInfo) -> ! { 
+    loop { unsafe { core::arch::asm!("hlt"); } } 
 }
 
 #[link_section = ".text._start"]
@@ -28,7 +30,6 @@ pub extern "C" fn _start() -> ! {
     loop { unsafe { core::arch::asm!("hlt"); } }
 }
 
-// ... (tady nech ty funkce memset, memcpy atd. ze spodu beze zmeny)
 #[no_mangle]
 pub unsafe extern "C" fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
     let mut i = 0; while i < n { *s.add(i) = c as u8; i += 1; } s
