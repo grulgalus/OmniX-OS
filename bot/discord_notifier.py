@@ -1,53 +1,54 @@
+import discord
 import os
 import sys
-import requests
+import asyncio
 
-def main():
+async def send_notification():
     # Načtení dat z GitHub Actions
-    webhook_url = os.getenv("DISCORD_WEBHOOK")
+    token = os.getenv("DISCORD_TOKEN")
+    channel_id = os.getenv("DISCORD_CHANNEL_ID")
     run_number = int(os.getenv("GITHUB_RUN_NUMBER", "0"))
     commit_msg = os.getenv("COMMIT_MESSAGE", "Neznámý commit")
-    repo = os.getenv("GITHUB_REPOSITORY", "OmniX-OS")
-    
-    # ID uživatele nebo role, kterou chceš označit (pingnout)
     ping_id = os.getenv("PING_ID", "&1502000912342843523") 
 
-    if not webhook_url:
-        print("Chyba: Nenalezen DISCORD_WEBHOOK v tajnostech (Secrets).")
+    if not token or not channel_id:
+        print("Chyba: Chybí DISCORD_TOKEN nebo DISCORD_CHANNEL_ID v GitHub Secrets!")
         sys.exit(1)
 
-    # Je to jubilejní build (násobek 100)?
-    is_milestone = (run_number > 0) and (run_number % 100 == 0)
+    intents = discord.Intents.default()
+    client = discord.Client(intents=intents)
 
-    # Sestavení zprávy
-    if is_milestone:
-        title = f"🏆 HISTORICKÝ MILNÍK: BUILD #{run_number}!"
-        color = 0xFFD700  # Zlatá barva
-        ping_text = f"<@{ping_id}>" if ping_id else "@here"
-        content = f"🚨 {ping_text} **DÁMY A PÁNOVÉ, OMNIX OS PRÁVĚ DOSÁHL BUILDU #{run_number}!** 🚨\nČas otevřít šampaňské! 🍾🥂"
-    else:
-        title = f"✅ OmniX OS Build #{run_number} úspěšný"
-        color = 0x00FF00  # Zelená barva
-        content = "" # Běžný build bez pingu
+    @client.event
+    async def on_ready():
+        print(f'Bot přihlášen jako {client.user}')
+        try:
+            channel = await client.fetch_channel(int(channel_id))
+            is_milestone = (run_number > 0) and (run_number % 100 == 0)
 
-    # Formátování Discord Embedu
-    payload = {
-        "content": content,
-        "embeds": [{
-            "title": title,
-            "description": f"**Repozitář:** {repo}\n**Commit:** {commit_msg}",
-            "color": color,
-            "footer": {"text": "OmniX OS Auto-Notifier"}
-        }]
-    }
+            if is_milestone:
+                title = f"🏆 HISTORICKÝ MILNÍK: OMNIX OS BUILD {run_number}!"
+                color = discord.Color.gold()
+                ping_text = f"<@{ping_id}>" if ping_id else "@here"
+                content = f"🚨 {ping_text} **DÁMY A PÁNOVÉ, PRÁVĚ JSME DOSÁHLI BUILDU {run_number}!** 🚨\nČas na oslavu! 🍾🥂"
+            else:
+                title = f"✅ OmniX OS Build {run_number} úspěšný"
+                color = discord.Color.green()
+                content = ""
 
-    # Odeslání do Discordu
-    response = requests.post(webhook_url, json=payload)
-    
-    if response.status_code == 204:
-        print(f"✅ Úspěšně odesláno do Discordu (Build #{run_number})")
-    else:
-        print(f"❌ Chyba při odesílání: {response.status_code}")
+            embed = discord.Embed(title=title, description=f"**Commit:** {commit_msg}", color=color)
+            embed.set_footer(text="OmniX OS Auto-Notifier")
+
+            # Odeslání zprávy a okamžité vypnutí bota
+            await channel.send(content=content, embed=embed)
+            print(f"✅ Zpráva pro build {run_number} úspěšně odeslána!")
+            await client.close()
+
+        except Exception as e:
+            print(f"❌ Nastala chyba při odesílání: {e}")
+            await client.close()
+            sys.exit(1)
+
+    await client.start(token)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(send_notification())

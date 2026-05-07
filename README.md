@@ -28,5 +28,11 @@ Projekt v současné době využívá pokročilou **dvojfázovou (Two-Stage) arc
 3. Vlož soubor `omnix_os.img` do virtuální **disketové mechaniky (Floppy Drive)**.
 4. Spusť virtuální stroj a systém okamžitě nabootuje!
 
+## 💿 OmniX OS 
+[![Build Status](https://github.com/grulgalus/OmniX-OS/actions/workflows/build-kernel.yml/badge.svg)](https://github.com/grulgalus/OmniX-OS/actions)
+![Version](https://img.shields.io/badge/version-1.0-blue.svg)
+
+Vlastní operační systém napsaný v Rustu na holém železe!
+
 ## 🎨 Zdroje a Grafika
 Ve složce [`res/`](res/) najdeš oficiální artworky a grafiku pro OmniX OS, včetně hlavní (fialové) a alternativní (stříbrné) verze loga, které vidíš nahoře.

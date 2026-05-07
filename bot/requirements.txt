@@ -1,1 +1,1 @@
-requests
+discord.py
