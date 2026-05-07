@@ -60,6 +60,7 @@ pub fn start() {
 }
 
 unsafe fn process_command() {
+    let is_help = TERM_LEN == 4 && *buf_ptr.add(0) == b'H' && *buf_ptr.add(1) == b'E' && *buf_ptr.add(2) == b'L' && *buf_ptr.add(3) == b'P';
     // Vytvorime bezpecny slice pomoci raw pointeru misto prime reference &TERM_BUF
     let buf_ptr = addr_of!(TERM_BUF) as *const u8;
     let buf_slice = core::slice::from_raw_parts(buf_ptr, TERM_LEN);
@@ -69,9 +70,12 @@ unsafe fn process_command() {
     let is_cls = TERM_LEN == 3 && *buf_ptr.add(0) == b'C' && *buf_ptr.add(1) == b'L' && *buf_ptr.add(2) == b'S';
     let is_ver = TERM_LEN == 3 && *buf_ptr.add(0) == b'V' && *buf_ptr.add(1) == b'E' && *buf_ptr.add(2) == b'R';
     let is_run = TERM_LEN == 3 && *buf_ptr.add(0) == b'R' && *buf_ptr.add(1) == b'U' && *buf_ptr.add(2) == b'N';
+    let is_time = TERM_LEN == 4 && *buf_ptr.add(0) == b'T' && *buf_ptr.add(1) == b'I' && *buf_ptr.add(2) == b'M' && *buf_ptr.add(3) == b'E';
+    let is_whoami = TERM_LEN == 6 && *buf_ptr.add(0) == b'W' && *buf_ptr.add(1) == b'H' && *buf_ptr.add(2) == b'O' && *buf_ptr.add(3) == b'A' && *buf_ptr.add(4) == b'M' && *buf_ptr.add(5) == b'I';
 
     if is_help {
-        push_history(b"CMDS: HELP, CLS, VER, RUN", 20);
+        // Nezapomeň aktualizovat nápovědu!
+        push_history(b"CMDS: HELP, CLS, VER, RUN, TIME, WHOAMI", 39);
     } else if is_cls {
         let h_len_ptr = addr_of_mut!(TERM_HIST_LEN);
         for i in 0..6 { (*h_len_ptr)[i] = 0; } 
@@ -81,6 +85,19 @@ unsafe fn process_command() {
         push_history(b"LAUNCHING APP...", 16);
         crate::vga::swap_buffers();
         crate::omxapk::run_app(200); 
+    
+    // --- TVOJE NOVÉ PŘÍKAZY ---
+    } else if is_time {
+        // Zavoláme RTC modul pro aktuální čas z biosu
+        let time_str = crate::rtc::get_time();
+        push_history(b"CURRENT SYSTEM TIME:", 20);
+        push_history(time_str, 5);
+        
+    } else if is_whoami {
+        // Jednoduchý textový výpis
+        push_history(b"ROOT / OMNIX-ADMIN", 18);
+    // --------------------------
+
     } else if TERM_LEN > 0 {
         push_history(b"BAD COMMAND!", 12);
     }
