@@ -1,51 +1,29 @@
 use crate::vga;
-use crate::keyboard;
+use crate::ata;
 
 pub fn run_installer() {
-    vga::clear_screen();
-    vga::print_str("======================================\n");
-    vga::print_str("          VITEJTE V OMNIX OS          \n");
-    vga::print_str("======================================\n\n");
-    vga::print_str("Detekovan novy disk.\n");
-    vga::print_str("Stisknete 'I' pro Instalaci systemu.\n");
-    vga::print_str("Stisknete 'R' pro Recovery mod.\n\n> ");
+    vga::clear_screen(1); 
+    
+    vga::draw_rect(60, 50, 200, 100, 7); 
+    vga::draw_rect(60, 50, 200, 15, 8); 
 
-    loop {
-        let key = keyboard::read_key();
-        if key == b'I' || key == b'i' {
-            start_installation();
-            break;
-        } else if key == b'R' || key == b'r' {
-            start_recovery();
-            break;
-        }
-    }
-}
-
-fn start_installation() {
-    vga::clear_screen();
-    vga::print_str("======================================\n");
-    vga::print_str("          INSTALACE OMNIX OS          \n");
-    vga::print_str("======================================\n\n");
-    
-    vga::print_str("[1/3] Formatovani a priprava disku...\n");
-    fake_delay(30000000);
-    
-    vga::print_str("[2/3] Kopirovani jadra systemu...\n");
-    fake_delay(40000000);
-    
-    vga::print_str("[3/3] Nastavovani bootloaderu...\n\n");
     fake_delay(20000000);
-    
-    vga::print_str("Instalace dokoncena! Spoustim system...\n");
-    fake_delay(40000000);
-}
 
-fn start_recovery() {
-    vga::clear_screen();
-    vga::print_str("=== RECOVERY MOD ===\n\n");
-    vga::print_str("Zadna predchozi instalace nenalezena.\n");
-    vga::print_str("System zastaven.\n");
+    let mut disk_data = [0u8; 512];
+    disk_data[0] = 0x4F; 
+    disk_data[1] = 0x4D; 
+    disk_data[2] = 0x4E; 
+    disk_data[3] = 0x49; 
+    disk_data[4] = 0x58; 
+
+    for i in 0..160 {
+        vga::draw_rect(80, 100, i, 20, 2); 
+        ata::write_sector(i as u32, &disk_data);
+        fake_delay(500000);
+    }
+
+    vga::draw_rect(60, 50, 200, 100, 2); 
+    
     loop { unsafe { core::arch::asm!("hlt"); } }
 }
 
