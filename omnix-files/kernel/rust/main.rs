@@ -5,8 +5,11 @@
 pub mod vga;
 #[path = "../../drivers/rust/ata.rs"]
 pub mod ata;
+#[path = "../../drivers/rust/keyboard.rs"]
+pub mod keyboard;
 
-mod installer;
+pub mod installer;
+pub mod system_ui;
 
 use core::panic::PanicInfo;
 
