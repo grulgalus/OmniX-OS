@@ -15,8 +15,8 @@ pub fn run_installer() {
     
     // Disk 1
     vga::draw_rect(40, 80, 240, 20, 15);
-    vga::draw_rect(40, 80, 240, 20, 8); // Okraj
-    vga::draw_rect(41, 81, 238, 18, 15); // Vnitrek
+    vga::draw_rect(40, 80, 240, 20, 8); 
+    vga::draw_rect(41, 81, 238, 18, 15); 
     vga::draw_str(b"[1] /DEV/HDA - 64MB (PRIMARY)", 45, 86, 0);
 
     // Disk 2
@@ -24,6 +24,9 @@ pub fn run_installer() {
     vga::draw_rect(40, 110, 240, 20, 8);
     vga::draw_rect(41, 111, 238, 18, 15);
     vga::draw_str(b"[2] /DEV/HDB - UNALLOCATED", 45, 116, 0);
+
+    // UKAŽ TO NA MONITORU!
+    vga::swap_buffers();
 
     // Cekani na vyber disku
     loop {
@@ -58,11 +61,15 @@ pub fn run_installer() {
         let start_idx = if i == 100 { 0 } else if i >= 10 { 1 } else { 2 };
         vga::draw_str(&text[start_idx..4], 140, 80, 0);
 
+        // UKAŽ AKTUALNÍ PROCENTA NA MONITORU!
+        vga::swap_buffers();
+
         ata::write_sector(i as u32, &disk_data);
         fake_delay(200000);
     }
 
     vga::draw_str(b"DONE!", 140, 130, 0);
+    vga::swap_buffers(); // Ukaz napis DONE
     fake_delay(30000000);
 
     system_ui::start();
