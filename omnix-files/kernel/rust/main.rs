@@ -32,10 +32,8 @@ pub extern "C" fn _start() -> ! {
         omxapk::run_application("system_ui.omxapk");
     }
 
+    // Žádný loop keyboard::read_key() tady už nesmí být!
     loop {
-        let key = keyboard::read_key();
-        if key != 0 {
-            vga::print_char(key);
-        }
+        unsafe { core::arch::asm!("hlt"); }
     }
 }
