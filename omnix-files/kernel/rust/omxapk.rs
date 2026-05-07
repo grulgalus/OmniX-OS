@@ -1,17 +1,18 @@
-#[repr(C, packed)]
+use crate::vga;
+
 pub struct OmxApkHeader {
-    pub magic: [u8; 4],
+    pub magic: u32,
     pub version: u8,
-    pub entry_point: u32,
-    pub file_size: u32,
 }
 
+#[allow(dead_code)]
 pub fn is_valid_app(header: &OmxApkHeader) -> bool {
-    header.magic == [b'O', b'M', b'X', b'!']
+    header.magic == 0x4F4D5800 
 }
 
 pub fn run_application(name: &str) {
-    crate::vga::print_str("Spoustim .omxapk: ");
-    crate::vga::print_str(name);
-    crate::vga::print_str("\n");
+    vga::clear_screen();
+    vga::print_str("Spoustim OmniX aplikaci:\n");
+    vga::print_str(name);
+    vga::print_str("\n\nBezi... (Zavrete restartem GUI)");
 }
