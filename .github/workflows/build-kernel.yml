@@ -22,7 +22,11 @@ jobs:
           nasm -f bin omnix-files/bootloader/asm/boot.asm -o boot.bin
           rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C no-redzone=y -C code-model=kernel --emit obj omnix-files/kernel/rust/main.rs -o kernel.o
           ld -m elf_i386 -T omnix-files/linker.ld kernel.o -o kernel.bin
-          cat boot.bin kernel.bin > omnix_core.bin
+
+          cat boot.bin kernel.bin > temp.bin
+          dd if=/dev/zero of=padding.bin bs=1 count=32768
+          cat temp.bin padding.bin | head -c 32768 > omnix_core.bin
+
           mkdir -p isodir
           cp omnix_core.bin isodir/
           xorriso -as mkisofs -R -J -b omnix_core.bin -no-emul-boot -boot-load-size 64 -o omnix_os.iso isodir
