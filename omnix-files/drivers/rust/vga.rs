@@ -1,7 +1,6 @@
 const FRAMEBUFFER: *mut u8 = 0xA0000 as *mut u8;
-const SCREEN_SIZE: usize = 64000; // 320x200
+const SCREEN_SIZE: usize = 64000;
 
-// NASE RYCHLA NEVIDITELNA PAMET (Double Buffer)
 static mut BACKBUFFER: [u8; SCREEN_SIZE] = [0; SCREEN_SIZE];
 
 const FONT: [(u8, [u8; 8]); 47] = [
@@ -54,33 +53,28 @@ const FONT: [(u8, [u8; 8]); 47] = [
     (b'!', [0x18, 0x18, 0x18, 0x18, 0x00, 0x18, 0x18, 0x00]),
 ];
 
-// Zapisujeme JEN do neviditelneho Backbufferu
 pub fn put_pixel(x: usize, y: usize, color: u8) {
     if x < 320 && y < 200 {
-        unsafe { BACKBUFFER[y * 320 + x] = color; }
+        let idx = y * 320 + x;
+        unsafe { *BACKBUFFER.get_unchecked_mut(idx) = color; }
     }
 }
 
 pub fn clear_screen(color: u8) {
     unsafe {
         for i in 0..SCREEN_SIZE {
-            BACKBUFFER[i] = color;
+            *BACKBUFFER.get_unchecked_mut(i) = color;
         }
     }
 }
 
-// BLESKOVE PREKLOPENI PAMETI NA OBRAZOVKU
 pub fn swap_buffers() {
-    unsafe {
-        core::ptr::copy_nonoverlapping(BACKBUFFER.as_ptr(), FRAMEBUFFER, SCREEN_SIZE);
-    }
+    unsafe { core::ptr::copy_nonoverlapping(BACKBUFFER.as_ptr(), FRAMEBUFFER, SCREEN_SIZE); }
 }
 
 pub fn draw_rect(x: usize, y: usize, w: usize, h: usize, color: u8) {
     for j in y..(y + h) {
-        for i in x..(x + w) {
-            put_pixel(i, j, color);
-        }
+        for i in x..(x + w) { put_pixel(i, j, color); }
     }
 }
 
@@ -90,9 +84,7 @@ pub fn draw_char(c: u8, x: usize, y: usize, color: u8) {
             let bitmap = FONT[i].1;
             for row in 0..8 {
                 for col in 0..8 {
-                    if (bitmap[row] >> (7 - col)) & 1 == 1 {
-                        put_pixel(x + col, y + row, color);
-                    }
+                    if (bitmap[row] >> (7 - col)) & 1 == 1 { put_pixel(x + col, y + row, color); }
                 }
             }
             break;
@@ -101,8 +93,5 @@ pub fn draw_char(c: u8, x: usize, y: usize, color: u8) {
 }
 
 pub fn draw_str(s: &[u8], mut x: usize, y: usize, color: u8) {
-    for &c in s {
-        draw_char(c, x, y, color);
-        x += 8;
-    }
+    for &c in s { draw_char(c, x, y, color); x += 8; }
 }
