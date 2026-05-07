@@ -1,16 +1,34 @@
 use crate::vga;
 use crate::mouse;
+use crate::keyboard;
 
 static mut TERMINAL_OPEN: bool = false;
 static mut SYSINFO_OPEN: bool = false;
 
+// PAMET PRO TERMINAL
+static mut TERM_BUF: [u8; 22] = [0; 22]; // Aktualne psany text
+static mut TERM_LEN: usize = 0;          // Delka psaneho textu
+static mut TERM_HIST: [[u8; 22]; 6] = [[0; 22]; 6]; // 6 radku historie
+static mut TERM_HIST_LEN: [usize; 6] = [0; 6];
+static mut BLINK_FRAME: u32 = 0;         // Pro blikani kurzoru
+
 pub fn start() {
     mouse::init();
 
+    unsafe {
+        // Uvitaci text do Terminalu
+        push_history(b"OMNIX OS TERMINAL V1", 20);
+        push_history(b"TYPE 'HELP' FOR CMDS", 20);
+    }
+
     loop {
         let (mx, my, is_clicked) = mouse::get_state();
+        let mut key = keyboard::read_key();
 
         unsafe {
+            BLINK_FRAME = BLINK_FRAME.wrapping_add(1);
+
+            // KLIKANI MYSI
             if is_clicked && mx >= 2 && mx <= 47 && my >= 187 && my <= 198 {
                 TERMINAL_OPEN = true;
             }
@@ -23,9 +41,22 @@ pub fn start() {
             if is_clicked && SYSINFO_OPEN && mx >= 296 && mx <= 308 && my >= 12 && my <= 24 {
                 SYSINFO_OPEN = false;
             }
+
+            // KLAVESNICE PRO TERMINAL
+            if TERMINAL_OPEN && key != 0 {
+                if key == 8 { // Backspace
+                    if TERM_LEN > 0 { TERM_LEN -= 1; }
+                } else if key == b'\n' { // Enter
+                    process_command();
+                } else if key >= 32 && key <= 126 && TERM_LEN < 22 {
+                    // Prevod na velka pismena (Hacker style)
+                    if key >= b'a' && key <= b'z' { key -= 32; }
+                    TERM_BUF[TERM_LEN] = key;
+                    TERM_LEN += 1;
+                }
+            }
         }
 
-        // Kreslime VSECHNO jen do neviditelneho modulu (okamzite hotove)
         draw_desktop();
 
         unsafe {
@@ -34,12 +65,46 @@ pub fn start() {
         }
 
         draw_cursor(mx, my);
-
-        // Nyni vse vysleme NAJEDNOU na obrazovku
         vga::swap_buffers();
-        
-        // ZADNY FAKE DELAY TADY NENI - JEDEME NA MAXIMALNI FPS
     }
+}
+
+// ZPRACOVANI PRIKAZU V TERMINALU
+unsafe fn process_command() {
+    push_history(&TERM_BUF, TERM_LEN);
+
+    if TERM_LEN == 4 && TERM_BUF[0..4] == *b"HELP" {
+        push_history(b"CMDS: HELP, CLS, VER, RUN", 20); // Pridan RUN do napovedy
+    } 
+    else if TERM_LEN == 3 && TERM_BUF[0..3] == *b"CLS" {
+        for i in 0..6 { TERM_HIST_LEN[i] = 0; } 
+    } 
+    else if TERM_LEN == 3 && TERM_BUF[0..3] == *b"VER" {
+        push_history(b"OMNIX OS CORE 1.0", 17);
+    } 
+    else if TERM_LEN == 3 && TERM_BUF[0..3] == *b"RUN" {
+        // TADY SPUSTIME APLIKACI!
+        push_history(b"LAUNCHING APP...", 16);
+        crate::vga::swap_buffers(); // Aby uzivatel videl zpravu
+        crate::omxapk::run_app(200); // Spusti .omxapk ze sektoru 200
+        // Jakmile aplikaci zavre (ESC), kod se vrati sem.
+    } 
+    else if TERM_LEN > 0 {
+        push_history(b"BAD COMMAND!", 12);
+    }
+    
+    TERM_LEN = 0; 
+}
+
+// POSOUVANI HISTORIE TERMINALU NAHORU
+unsafe fn push_history(text: &[u8], len: usize) {
+    for i in 0..5 {
+        TERM_HIST[i] = TERM_HIST[i + 1];
+        TERM_HIST_LEN[i] = TERM_HIST_LEN[i + 1];
+    }
+    let l = if len > 22 { 22 } else { len };
+    for i in 0..l { TERM_HIST[5][i] = text[i]; }
+    TERM_HIST_LEN[5] = l;
 }
 
 fn draw_cursor(x: usize, y: usize) {
@@ -72,8 +137,26 @@ fn draw_terminal() {
     let x = 60; let y = 50; let w = 210; let h = 110;
     draw_window(x, y, w, h, b"HACKER TERMINAL");
     draw_sunken_rect(x + 4, y + 16, w - 8, h - 20, 0);
-    vga::draw_str(b">> ACCESS GRANTED <<", x + 8, y + 20, 10);
-    vga::draw_str(b"C:/> _", x + 8, y + 35, 10);
+
+    unsafe {
+        // Vykresleni historie
+        for i in 0..6 {
+            if TERM_HIST_LEN[i] > 0 {
+                vga::draw_str(&TERM_HIST[i][0..TERM_HIST_LEN[i]], x + 8, y + 20 + (i * 10), 10);
+            }
+        }
+
+        // Vykresleni vstupu a kurzoru
+        vga::draw_str(b">", x + 8, y + 84, 10);
+        if TERM_LEN > 0 {
+            vga::draw_str(&TERM_BUF[0..TERM_LEN], x + 18, y + 84, 10);
+        }
+        
+        // Blikajici kurzor
+        if (BLINK_FRAME % 60) < 30 {
+            vga::draw_rect(x + 18 + (TERM_LEN * 8), y + 84, 6, 8, 10);
+        }
+    }
 }
 
 fn draw_sysinfo() {
@@ -81,6 +164,7 @@ fn draw_sysinfo() {
     draw_window(x, y, w, h, b"SYSTEM INFO");
     draw_sunken_rect(x + 4, y + 16, w - 8, h - 20, 0);
     vga::draw_str(b"NET: ONLINE", x + 8, y + 20, 10);
+    vga::draw_str(b"OS: OMNIX 1.0", x + 8, y + 32, 10);
 }
 
 fn draw_window(x: usize, y: usize, w: usize, h: usize, title: &[u8]) {
