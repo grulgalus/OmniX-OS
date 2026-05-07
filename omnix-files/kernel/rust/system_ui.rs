@@ -103,9 +103,9 @@ unsafe fn handle_desktop_clicks(mx: usize, my: usize, clicked: bool) {
     if mx >= 10 && mx <= 40 && my >= 10 && my <= 40 { toggle_window(2); } 
     if mx >= 10 && mx <= 40 && my >= 50 && my <= 80 { toggle_window(4); } 
 
-    let wins = addr_of_mut!(WINDOWS) as *mut [Window; 4];
+    let win_ptr = addr_of_mut!(WINDOWS) as *mut Window;
     for i in (0..4).rev() { 
-        let w = &mut (*wins)[i];
+        let w = &mut *win_ptr.add(i);
         if w.visible && mx >= w.x && mx <= w.x + w.w && my >= w.y && my <= w.y + w.h {
             ACTIVE_WIN = i; 
             
@@ -122,10 +122,10 @@ unsafe fn handle_desktop_clicks(mx: usize, my: usize, clicked: bool) {
 }
 
 unsafe fn toggle_window(id: u8) {
-    let wins = addr_of_mut!(WINDOWS) as *mut [Window; 4];
+    let win_ptr = addr_of_mut!(WINDOWS) as *mut Window;
     for i in 0..4 {
-        if (*wins)[i].id == id {
-            (*wins)[i].visible = true;
+        if (*win_ptr.add(i)).id == id {
+            (*win_ptr.add(i)).visible = true;
             ACTIVE_WIN = i;
         }
     }
@@ -135,17 +135,17 @@ unsafe fn handle_keyboard(key: u8, pressed: bool) {
     if !pressed || key == 0 { return; }
 
     if key == 9 {
-        let wins = addr_of_mut!(WINDOWS) as *mut [Window; 4];
+        let win_ptr = addr_of_mut!(WINDOWS) as *mut Window;
         for _ in 0..4 {
             ACTIVE_WIN = (ACTIVE_WIN + 1) % 4;
-            if (*wins)[ACTIVE_WIN].visible { break; }
+            if (*win_ptr.add(ACTIVE_WIN)).visible { break; }
         }
         return;
     }
 
-    let wins = addr_of!(WINDOWS) as *const [Window; 4];
-    let active_id = (*wins)[ACTIVE_WIN].id;
-    let is_visible = (*wins)[ACTIVE_WIN].visible;
+    let win_ptr = addr_of!(WINDOWS) as *const Window;
+    let active_id = (*win_ptr.add(ACTIVE_WIN)).id;
+    let is_visible = (*win_ptr.add(ACTIVE_WIN)).visible;
 
     if !is_visible { return; }
 
@@ -205,11 +205,11 @@ fn draw_start_menu() {
 }
 
 unsafe fn draw_windows() {
-    let wins = addr_of!(WINDOWS) as *const [Window; 4];
+    let win_ptr = addr_of!(WINDOWS) as *const Window;
     for i in 0..4 {
-        if i != ACTIVE_WIN && (*wins)[i].visible { draw_app_window(&(*wins)[i], false); }
+        if i != ACTIVE_WIN && (*win_ptr.add(i)).visible { draw_app_window(&*win_ptr.add(i), false); }
     }
-    if (*wins)[ACTIVE_WIN].visible { draw_app_window(&(*wins)[ACTIVE_WIN], true); }
+    if (*win_ptr.add(ACTIVE_WIN)).visible { draw_app_window(&*win_ptr.add(ACTIVE_WIN), true); }
 }
 
 unsafe fn draw_app_window(w: &Window, is_active: bool) {
@@ -319,11 +319,14 @@ unsafe fn push_history(text: &[u8], len: usize) {
     let hist_ptr = addr_of_mut!(TERM_HIST) as *mut [u8; 22];
     let lens_ptr = addr_of_mut!(TERM_HIST_LEN) as *mut usize;
     for i in 0..5 {
-        for j in 0..22 { let val = (*hist_ptr.add(i + 1))[j]; (*hist_ptr.add(i))[j] = val; }
+        let src = hist_ptr.add(i + 1) as *const u8;
+        let dst = hist_ptr.add(i) as *mut u8;
+        for j in 0..22 { *dst.add(j) = *src.add(j); }
         *lens_ptr.add(i) = *lens_ptr.add(i + 1);
     }
     let l = if len > 22 { 22 } else { len };
     let text_ptr = text.as_ptr();
-    for i in 0..l { (*hist_ptr.add(5))[i] = *text_ptr.add(i); }
+    let dst = hist_ptr.add(5) as *mut u8;
+    for i in 0..l { *dst.add(i) = *text_ptr.add(i); }
     *lens_ptr.add(5) = l;
 }
