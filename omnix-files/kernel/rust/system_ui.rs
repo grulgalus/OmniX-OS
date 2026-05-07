@@ -155,17 +155,16 @@ fn draw_terminal() {
         for i in 0..6 {
             let len = *hist_len_ptr.add(i);
             if len > 0 {
-                let text = core::slice::from_raw_parts(*hist_ptr.add(i).as_ptr(), len);
+                // OPRAVA ZDE:
+                // Ziskame adresu daneho radku a rovnou ji pretypujeme na ukazatel na pismenka
+                let text_ptr = hist_ptr.add(i) as *const u8;
+                let text = core::slice::from_raw_parts(text_ptr, len);
+                
                 vga::draw_str(text, x + 8, y + 20 + (i * 10), 10);
             }
         }
-        vga::draw_str(b">", x + 8, y + 84, 10);
-        if TERM_LEN > 0 { 
-            let buf_ptr = addr_of!(TERM_BUF) as *const u8;
-            let current_text = core::slice::from_raw_parts(buf_ptr, TERM_LEN);
-            vga::draw_str(current_text, x + 18, y + 84, 10); 
-        }
         if (BLINK_FRAME % 60) < 30 { vga::draw_rect(x + 18 + (TERM_LEN * 8), y + 84, 6, 8, 10); }
+        vga::draw_str(b">", x + 8, y + 84, 10);
     }
 }
 
