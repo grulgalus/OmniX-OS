@@ -1,7 +1,7 @@
-use core::ptr::{addr_of, addr_of_mut};
 use crate::vga;
 use crate::mouse;
 use crate::keyboard;
+use core::ptr::{addr_of, addr_of_mut};
 
 static mut TERMINAL_OPEN: bool = false;
 static mut SYSINFO_OPEN: bool = false;
@@ -22,7 +22,8 @@ pub fn start() {
 
     loop {
         let (mx, my, is_clicked) = mouse::get_state();
-        let mut key = keyboard::read_key();
+        // Oprava warningu: Odebrano "mut" protoze "key" uz nemodifikujeme
+        let key = keyboard::read_key();
 
         unsafe {
             BLINK_FRAME = BLINK_FRAME.wrapping_add(1);
@@ -59,13 +60,16 @@ pub fn start() {
     }
 }
 
+// ZPRACOVANI PRIKAZU V TERMINALU
 unsafe fn process_command() {
-    let is_help = TERM_LEN == 4 && *buf_ptr.add(0) == b'H' && *buf_ptr.add(1) == b'E' && *buf_ptr.add(2) == b'L' && *buf_ptr.add(3) == b'P';
-    // Vytvorime bezpecny slice pomoci raw pointeru misto prime reference &TERM_BUF
+    // 1. TADY JE TA OPRAVA CHYBY! Musime definovat buf_ptr jako prvni vec.
     let buf_ptr = addr_of!(TERM_BUF) as *const u8;
+    
+    // Zapiseme radek do historie
     let buf_slice = core::slice::from_raw_parts(buf_ptr, TERM_LEN);
     push_history(buf_slice, TERM_LEN);
 
+    // 2. Definice jednotlivych prikazu (nyni uz maji buf_ptr k dispozici)
     let is_help = TERM_LEN == 4 && *buf_ptr.add(0) == b'H' && *buf_ptr.add(1) == b'E' && *buf_ptr.add(2) == b'L' && *buf_ptr.add(3) == b'P';
     let is_cls = TERM_LEN == 3 && *buf_ptr.add(0) == b'C' && *buf_ptr.add(1) == b'L' && *buf_ptr.add(2) == b'S';
     let is_ver = TERM_LEN == 3 && *buf_ptr.add(0) == b'V' && *buf_ptr.add(1) == b'E' && *buf_ptr.add(2) == b'R';
@@ -73,9 +77,10 @@ unsafe fn process_command() {
     let is_time = TERM_LEN == 4 && *buf_ptr.add(0) == b'T' && *buf_ptr.add(1) == b'I' && *buf_ptr.add(2) == b'M' && *buf_ptr.add(3) == b'E';
     let is_whoami = TERM_LEN == 6 && *buf_ptr.add(0) == b'W' && *buf_ptr.add(1) == b'H' && *buf_ptr.add(2) == b'O' && *buf_ptr.add(3) == b'A' && *buf_ptr.add(4) == b'M' && *buf_ptr.add(5) == b'I';
 
+    // 3. Provedeni logiky
     if is_help {
-        // Nezapomeň aktualizovat nápovědu!
-        push_history(b"CMDS: HELP, CLS, VER, RUN, TIME, WHOAMI", 39);
+        push_history(b"CMDS: HELP, CLS, VER, RUN", 20);
+        push_history(b"TIME, WHOAMI", 12); // Pridano na druhy radek, at se to vejde
     } else if is_cls {
         let h_len_ptr = addr_of_mut!(TERM_HIST_LEN);
         for i in 0..6 { (*h_len_ptr)[i] = 0; } 
@@ -85,19 +90,12 @@ unsafe fn process_command() {
         push_history(b"LAUNCHING APP...", 16);
         crate::vga::swap_buffers();
         crate::omxapk::run_app(200); 
-    
-    // --- TVOJE NOVÉ PŘÍKAZY ---
     } else if is_time {
-        // Zavoláme RTC modul pro aktuální čas z biosu
         let time_str = crate::rtc::get_time();
-        push_history(b"CURRENT SYSTEM TIME:", 20);
+        push_history(b"SYS TIME IS:", 12);
         push_history(time_str, 5);
-        
     } else if is_whoami {
-        // Jednoduchý textový výpis
-        push_history(b"ROOT / OMNIX-ADMIN", 18);
-    // --------------------------
-
+        push_history(b"ROOT / ADMIN", 12);
     } else if TERM_LEN > 0 {
         push_history(b"BAD COMMAND!", 12);
     }
@@ -109,15 +107,19 @@ unsafe fn push_history(text: &[u8], len: usize) {
     for i in 0..5 {
         for j in 0..22 {
             let val = *TERM_HIST.get_unchecked(i + 1).get_unchecked(j);
-            *TERM_HIST.get_unchecked_mut(i).get_unchecked_mut(j) = val;
+            let ptr = addr_of_mut!(TERM_HIST) as *mut [u8; 22];
+            (*ptr.add(i))[j] = val;
         }
-        *TERM_HIST_LEN.get_unchecked_mut(i) = *TERM_HIST_LEN.get_unchecked(i + 1);
+        let len_ptr = addr_of_mut!(TERM_HIST_LEN) as *mut usize;
+        *len_ptr.add(i) = *len_ptr.add(i + 1);
     }
     let l = if len > 22 { 22 } else { len };
     for i in 0..l { 
-        *TERM_HIST.get_unchecked_mut(5).get_unchecked_mut(i) = *text.get_unchecked(i); 
+        let ptr = addr_of_mut!(TERM_HIST) as *mut [u8; 22];
+        (*ptr.add(5))[i] = *text.get_unchecked(i); 
     }
-    *TERM_HIST_LEN.get_unchecked_mut(5) = l;
+    let len_ptr = addr_of_mut!(TERM_HIST_LEN) as *mut usize;
+    *len_ptr.add(5) = l;
 }
 
 fn draw_cursor(x: usize, y: usize) {
@@ -130,7 +132,11 @@ fn draw_desktop() {
     draw_raised_rect(0, 185, 320, 15, 7); 
     draw_raised_rect(2, 187, 45, 11, 10);
     vga::draw_str(b"START", 8, 189, 0);
-    draw_sunken_rect(275, 187, 42, 11, 7); vga::draw_str(b"12:00", 280, 189, 0);
+    draw_sunken_rect(275, 187, 42, 11, 7); 
+    
+    // Zobrazuje skutecny cas pres RTC modul!
+    let time = unsafe { crate::rtc::get_time() };
+    vga::draw_str(time, 280, 189, 0);
 }
 
 fn draw_icon(x: usize, y: usize, label: &[u8]) {
@@ -144,14 +150,21 @@ fn draw_terminal() {
     draw_sunken_rect(x + 4, y + 16, w - 8, h - 20, 0);
 
     unsafe {
+        let hist_len_ptr = addr_of!(TERM_HIST_LEN) as *const usize;
+        let hist_ptr = addr_of!(TERM_HIST) as *const [u8; 22];
         for i in 0..6 {
-            let len = *TERM_HIST_LEN.get_unchecked(i);
+            let len = *hist_len_ptr.add(i);
             if len > 0 {
-                vga::draw_str(&TERM_HIST[i][0..len], x + 8, y + 20 + (i * 10), 10);
+                let text = core::slice::from_raw_parts(*hist_ptr.add(i).as_ptr(), len);
+                vga::draw_str(text, x + 8, y + 20 + (i * 10), 10);
             }
         }
         vga::draw_str(b">", x + 8, y + 84, 10);
-        if TERM_LEN > 0 { vga::draw_str(&TERM_BUF[0..TERM_LEN], x + 18, y + 84, 10); }
+        if TERM_LEN > 0 { 
+            let buf_ptr = addr_of!(TERM_BUF) as *const u8;
+            let current_text = core::slice::from_raw_parts(buf_ptr, TERM_LEN);
+            vga::draw_str(current_text, x + 18, y + 84, 10); 
+        }
         if (BLINK_FRAME % 60) < 30 { vga::draw_rect(x + 18 + (TERM_LEN * 8), y + 84, 6, 8, 10); }
     }
 }
@@ -177,16 +190,4 @@ fn draw_raised_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
 fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y, w, h, bg); vga::draw_rect(x, y, w, 1, 8); vga::draw_rect(x, y, 1, h, 8); 
     vga::draw_rect(x + w - 1, y, 1, h, 15); vga::draw_rect(x, y + h - 1, w, 1, 15); 
-}
-
-pub fn draw_start_menu() {
-    vga::draw_rect(0, 100, 100, 85, 7);
-    vga::draw_str(b"FILES", 10, 110, 0);
-    vga::draw_str(b"EDITOR", 10, 125, 0);
-    vga::draw_str(b"SETTINGS", 10, 140, 0);
-}
-
-pub fn update_clock() {
-    let time = unsafe { crate::rtc::get_time() };
-    crate::vga::draw_str(time, 280, 189, 0);
 }
