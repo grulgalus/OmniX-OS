@@ -1,58 +1,82 @@
 use crate::vga;
-use crate::keyboard;
+use crate::mouse;
+
+// Stavove promenne naseho GUI
+static mut TERMINAL_OPEN: bool = false;
+static mut SYSINFO_OPEN: bool = false;
 
 pub fn start() {
-    draw_desktop();
-    draw_sysinfo();
-    draw_terminal();
+    mouse::init();
 
     loop {
-        let key = keyboard::read_key();
-        
-        if key == b'1' {
-            draw_desktop();
-            draw_sysinfo();
-            draw_terminal();
-        } 
-        else if key == b'2' {
-            draw_desktop();
-            draw_terminal();
-            draw_sysinfo();
-        } 
-        else if key == 27 {
-            draw_desktop();
+        // Precteme realny stav hardwarove mysi
+        let (mx, my, is_clicked) = mouse::get_state();
+
+        unsafe {
+            // Kliknuti na START tlacitko (dole vlevo)
+            if is_clicked && mx >= 2 && mx <= 47 && my >= 187 && my <= 198 {
+                TERMINAL_OPEN = true;
+            }
+
+            // Kliknuti na ikonu SYS na plose
+            if is_clicked && mx >= 10 && mx <= 40 && my >= 50 && my <= 70 {
+                SYSINFO_OPEN = true;
+            }
+
+            // Kliknuti na X pro zavreni Terminalu
+            if is_clicked && TERMINAL_OPEN && mx >= 256 && mx <= 268 && my >= 52 && my <= 64 {
+                TERMINAL_OPEN = false;
+            }
+
+            // Kliknuti na X pro zavreni SysInfo
+            if is_clicked && SYSINFO_OPEN && mx >= 296 && mx <= 308 && my >= 12 && my <= 24 {
+                SYSINFO_OPEN = false;
+            }
         }
+
+        // 1. Vykresleni cele plochy vzdy od znova
+        draw_desktop();
+
+        unsafe {
+            // 2. Vykresleni oken, pokud jsou otevrena
+            if SYSINFO_OPEN { draw_sysinfo(); }
+            if TERMINAL_OPEN { draw_terminal(); }
+        }
+
+        // 3. Vykresleni kurzoru mysi UPLNE NAHORU (Bila barva)
+        draw_cursor(mx, my);
+
+        // Zpomaleni smycky, aby nam to nezahltilo procesor
+        fake_delay(500000);
     }
 }
 
+fn draw_cursor(x: usize, y: usize) {
+    // Jednoducha sipka kurzoru mysi
+    vga::draw_rect(x, y, 2, 6, 15);
+    vga::draw_rect(x, y, 5, 2, 15);
+    vga::draw_rect(x + 2, y + 2, 2, 2, 15);
+}
+
 fn draw_desktop() {
-    vga::clear_screen(3); // Bright Cyan pozadi presne podle obrazku
-
-    // Ikony na plose
+    vga::clear_screen(3); // Cyan plocha
+    
     draw_icon(10, 10, b"DISK");
-    draw_icon(10, 50, b"TERM");
-    draw_icon(10, 90, b"TRASH");
+    draw_icon(10, 50, b"SYS");
+    
+    draw_raised_rect(0, 185, 320, 15, 7); // Taskbar
 
-    // Taskbar dole (sedy)
-    draw_raised_rect(0, 185, 320, 15, 7);
-
-    // Zelene START tlacitko z obrazku
+    // Zelene START tlacitko (tohle muzes klikat!)
     draw_raised_rect(2, 187, 45, 11, 10);
     vga::draw_str(b"START", 8, 189, 0);
 
-    // Hodiny a taskbar ikony vpravo
     draw_sunken_rect(275, 187, 42, 11, 7);
     vga::draw_str(b"12:00", 280, 189, 0);
-    
-    draw_sunken_rect(210, 187, 60, 11, 7);
-    vga::draw_str(b"CPU 87%", 215, 189, 0);
 }
 
 fn draw_icon(x: usize, y: usize, label: &[u8]) {
-    // Pixel-art ikona
     draw_raised_rect(x + 4, y, 20, 18, 7);
     vga::draw_rect(x + 8, y + 4, 12, 10, 1);
-    // Text pod ikonou s cernym pozadim jako stare Windows
     vga::draw_rect(x, y + 20, 30, 9, 1);
     vga::draw_str(label, x + 2, y + 21, 15);
 }
@@ -62,19 +86,10 @@ fn draw_terminal() {
     let y = 50;
     let w = 210;
     let h = 110;
-    
     draw_window(x, y, w, h, b"HACKER TERMINAL");
-    
-    // Cerny vnitrek pro hacker styl
     draw_sunken_rect(x + 4, y + 16, w - 8, h - 20, 0);
-    
-    // Zelene svitici texty z tveho obrazku
     vga::draw_str(b">> ACCESS GRANTED <<", x + 8, y + 20, 10);
-    vga::draw_str(b"INTRUSION PROTOCOL...", x + 8, y + 35, 10);
-    vga::draw_str(b"DECRYPTING DATA...", x + 8, y + 45, 10);
-    vga::draw_str(b">> DATA BREACH <<", x + 8, y + 60, 12); // Cervena chyba
-    vga::draw_str(b"C:/> TRACE ROUTE...", x + 8, y + 75, 10);
-    vga::draw_str(b"C:/> _", x + 8, y + 85, 10);
+    vga::draw_str(b"C:/> _", x + 8, y + 35, 10);
 }
 
 fn draw_sysinfo() {
@@ -82,42 +97,37 @@ fn draw_sysinfo() {
     let y = 10;
     let w = 150;
     let h = 60;
-    
     draw_window(x, y, w, h, b"SYSTEM INFO");
-    
-    // Cerny vnitrek
     draw_sunken_rect(x + 4, y + 16, w - 8, h - 20, 0);
-    
-    vga::draw_str(b"NET: ONLINE...", x + 8, y + 20, 10);
-    vga::draw_str(b"ENCRYPTION: ACTIVE", x + 8, y + 32, 10);
-    vga::draw_str(b"STATUS: CONNECTED", x + 8, y + 44, 10);
+    vga::draw_str(b"NET: ONLINE", x + 8, y + 20, 10);
 }
 
 fn draw_window(x: usize, y: usize, w: usize, h: usize, title: &[u8]) {
-    // Sedy zaklad okna
     draw_raised_rect(x, y, w, h, 7);
-    
-    // Modry Title Bar (Gradient imitace pomoci dvou barev)
     vga::draw_rect(x + 2, y + 2, w - 4, 12, 1);
     vga::draw_str(title, x + 6, y + 4, 15);
-    
-    // Zavírací tlacitko
-    draw_raised_rect(x + w - 14, y + 2, 12, 12, 7);
+    draw_raised_rect(x + w - 14, y + 2, 12, 12, 7); // Tohle X jde klikat!
     vga::draw_str(b"X", x + w - 11, y + 4, 0);
 }
 
 fn draw_raised_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y, w, h, bg);
-    vga::draw_rect(x, y, w, 1, 15); // Horni bila linka
-    vga::draw_rect(x, y, 1, h, 15); // Leva bila linka
-    vga::draw_rect(x + w - 1, y, 1, h, 8); // Prava tmava linka
-    vga::draw_rect(x, y + h - 1, w, 1, 8); // Spodni tmava linka
+    vga::draw_rect(x, y, w, 1, 15); 
+    vga::draw_rect(x, y, 1, h, 15); 
+    vga::draw_rect(x + w - 1, y, 1, h, 8); 
+    vga::draw_rect(x, y + h - 1, w, 1, 8); 
 }
 
 fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y, w, h, bg);
-    vga::draw_rect(x, y, w, 1, 8); // Horni tmava linka
-    vga::draw_rect(x, y, 1, h, 8); // Leva tmava linka
-    vga::draw_rect(x + w - 1, y, 1, h, 15); // Prava bila linka
-    vga::draw_rect(x, y + h - 1, w, 1, 15); // Spodni bila linka
+    vga::draw_rect(x, y, w, 1, 8); 
+    vga::draw_rect(x, y, 1, h, 8); 
+    vga::draw_rect(x + w - 1, y, 1, h, 15); 
+    vga::draw_rect(x, y + h - 1, w, 1, 15); 
+}
+
+fn fake_delay(count: u32) {
+    for _ in 0..count {
+        unsafe { core::arch::asm!("nop", options(nomem, nostack, preserves_flags)); }
+    }
 }

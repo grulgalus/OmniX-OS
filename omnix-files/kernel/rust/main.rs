@@ -7,6 +7,8 @@ pub mod vga;
 pub mod ata;
 #[path = "../../drivers/rust/keyboard.rs"]
 pub mod keyboard;
+#[path = "../../drivers/rust/mouse.rs"]
+pub mod mouse;
 
 pub mod installer;
 pub mod system_ui;
