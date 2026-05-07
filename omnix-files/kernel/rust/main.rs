@@ -17,12 +17,13 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-// Zde začíná náš nový, profi OS
+// Zde zacina nas novy, profi OS
+#[link_section = ".text._start"]
 #[no_mangle]
-pub extern "C" fn kernel_main(_magic: u32, _info: u32) -> ! {
+pub extern "C" fn _start() -> ! {
     vga::set_color(0x0F, 0x05);
     vga::clear_screen();
-    
+
     let is_installed = false;
 
     if !is_installed {

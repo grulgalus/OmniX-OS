@@ -21,8 +21,7 @@ jobs:
           rustup target add i686-unknown-linux-gnu
           nasm -f bin omnix-files/bootloader/asm/boot.asm -o boot.bin
           rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C no-redzone=y -C code-model=kernel --emit obj omnix-files/kernel/rust/main.rs -o kernel.o
-          ld -m elf_i386 -T omnix-files/linker.ld kernel.o -o kernel.elf
-          objcopy -O binary kernel.elf kernel.bin
+          ld -m elf_i386 -T omnix-files/linker.ld kernel.o -o kernel.bin
           cat boot.bin kernel.bin > omnix_core.bin
           mkdir -p isodir
           cp omnix_core.bin isodir/
