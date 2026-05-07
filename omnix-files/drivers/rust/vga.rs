@@ -1,4 +1,8 @@
 const FRAMEBUFFER: *mut u8 = 0xA0000 as *mut u8;
+const SCREEN_SIZE: usize = 64000; // 320x200
+
+// NASE RYCHLA NEVIDITELNA PAMET (Double Buffer)
+static mut BACKBUFFER: [u8; SCREEN_SIZE] = [0; SCREEN_SIZE];
 
 const FONT: [(u8, [u8; 8]); 47] = [
     (b'A', [0x30, 0x78, 0xCC, 0xCC, 0xFC, 0xCC, 0xCC, 0x00]),
@@ -50,17 +54,25 @@ const FONT: [(u8, [u8; 8]); 47] = [
     (b'!', [0x18, 0x18, 0x18, 0x18, 0x00, 0x18, 0x18, 0x00]),
 ];
 
+// Zapisujeme JEN do neviditelneho Backbufferu
 pub fn put_pixel(x: usize, y: usize, color: u8) {
     if x < 320 && y < 200 {
-        unsafe { *FRAMEBUFFER.add(y * 320 + x) = color; }
+        unsafe { BACKBUFFER[y * 320 + x] = color; }
     }
 }
 
 pub fn clear_screen(color: u8) {
     unsafe {
-        for i in 0..64000 {
-            *FRAMEBUFFER.add(i) = color;
+        for i in 0..SCREEN_SIZE {
+            BACKBUFFER[i] = color;
         }
+    }
+}
+
+// BLESKOVE PREKLOPENI PAMETI NA OBRAZOVKU
+pub fn swap_buffers() {
+    unsafe {
+        core::ptr::copy_nonoverlapping(BACKBUFFER.as_ptr(), FRAMEBUFFER, SCREEN_SIZE);
     }
 }
 
