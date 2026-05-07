@@ -29,8 +29,7 @@ Projekt v současné době využívá pokročilou **dvojfázovou (Two-Stage) arc
 4. Spusť virtuální stroj a systém okamžitě nabootuje!
 
 ## 💿 OmniX OS 
-[![Build Status](https://github.com/grulgalus/OmniX-OS/actions/workflows/build-kernel.yml/badge.svg)](https://github.com/grulgalus/OmniX-OS/actions)
-![Version](https://img.shields.io/badge/version-1.0-blue.svg)
+[![Build OmniX OS](https://github.com/grulgalus/OmniX-OS/actions/workflows/build-kernel.yml/badge.svg?event=milestone)](https://github.com/grulgalus/OmniX-OS/actions/workflows/build-kernel.yml)
 
 Vlastní operační systém napsaný v Rustu a Asembly na holém železe!
 
