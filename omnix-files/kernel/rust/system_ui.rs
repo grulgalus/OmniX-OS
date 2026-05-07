@@ -154,3 +154,15 @@ fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y, w, h, bg); vga::draw_rect(x, y, w, 1, 8); vga::draw_rect(x, y, 1, h, 8); 
     vga::draw_rect(x + w - 1, y, 1, h, 15); vga::draw_rect(x, y + h - 1, w, 1, 15); 
 }
+
+pub fn draw_start_menu() {
+    vga::draw_rect(0, 100, 100, 85, 7);
+    vga::draw_str(b"FILES", 10, 110, 0);
+    vga::draw_str(b"EDITOR", 10, 125, 0);
+    vga::draw_str(b"SETTINGS", 10, 140, 0);
+}
+
+pub fn update_clock() {
+    let time = unsafe { crate::drivers::rtc::get_time() };
+    vga::draw_str(time.as_bytes(), 280, 189, 0);
+}
