@@ -20,7 +20,9 @@ jobs:
         run: |
           rustup target add i686-unknown-linux-gnu
           nasm -f bin omnix-files/bootloader/asm/boot.asm -o boot.bin
-          rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C no-redzone=y -C code-model=kernel --emit obj omnix-files/kernel/rust/main.rs -o kernel.o
+
+          rustc --target i686-unknown-linux-gnu -C panic=abort -C opt-level=2 -C relocation-model=static -C no-redzone=y -C code-model=kernel -C target-feature=-mmx,-sse,+soft-float --emit obj omnix-files/kernel/rust/main.rs -o kernel.o
+
           ld -m elf_i386 -T omnix-files/linker.ld kernel.o -o kernel.bin
 
           cat boot.bin kernel.bin > temp.bin
