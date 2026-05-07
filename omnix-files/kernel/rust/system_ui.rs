@@ -1,3 +1,4 @@
+use core::ptr::{addr_of, addr_of_mut};
 use crate::vga;
 use crate::mouse;
 use crate::keyboard;
@@ -37,8 +38,10 @@ pub fn start() {
                 } else if key == b'\n' { 
                     process_command();
                 } else if key >= 32 && key <= 126 && TERM_LEN < 22 {
-                    if key >= b'a' && key <= b'z' { key -= 32; }
-                    *TERM_BUF.get_unchecked_mut(TERM_LEN) = key;
+                    let mut k = key;
+                    if k >= b'a' && k <= b'z' { k -= 32; }
+                    let ptr = addr_of_mut!(TERM_BUF) as *mut u8;
+                    ptr.add(TERM_LEN).write(k);
                     TERM_LEN += 1;
                 }
             }
@@ -57,17 +60,21 @@ pub fn start() {
 }
 
 unsafe fn process_command() {
-    push_history(&TERM_BUF, TERM_LEN);
+    // Vytvorime bezpecny slice pomoci raw pointeru misto prime reference &TERM_BUF
+    let buf_ptr = addr_of!(TERM_BUF) as *const u8;
+    let buf_slice = core::slice::from_raw_parts(buf_ptr, TERM_LEN);
+    push_history(buf_slice, TERM_LEN);
 
-    let is_help = TERM_LEN == 4 && *TERM_BUF.get_unchecked(0) == b'H' && *TERM_BUF.get_unchecked(1) == b'E' && *TERM_BUF.get_unchecked(2) == b'L' && *TERM_BUF.get_unchecked(3) == b'P';
-    let is_cls = TERM_LEN == 3 && *TERM_BUF.get_unchecked(0) == b'C' && *TERM_BUF.get_unchecked(1) == b'L' && *TERM_BUF.get_unchecked(2) == b'S';
-    let is_ver = TERM_LEN == 3 && *TERM_BUF.get_unchecked(0) == b'V' && *TERM_BUF.get_unchecked(1) == b'E' && *TERM_BUF.get_unchecked(2) == b'R';
-    let is_run = TERM_LEN == 3 && *TERM_BUF.get_unchecked(0) == b'R' && *TERM_BUF.get_unchecked(1) == b'U' && *TERM_BUF.get_unchecked(2) == b'N';
+    let is_help = TERM_LEN == 4 && *buf_ptr.add(0) == b'H' && *buf_ptr.add(1) == b'E' && *buf_ptr.add(2) == b'L' && *buf_ptr.add(3) == b'P';
+    let is_cls = TERM_LEN == 3 && *buf_ptr.add(0) == b'C' && *buf_ptr.add(1) == b'L' && *buf_ptr.add(2) == b'S';
+    let is_ver = TERM_LEN == 3 && *buf_ptr.add(0) == b'V' && *buf_ptr.add(1) == b'E' && *buf_ptr.add(2) == b'R';
+    let is_run = TERM_LEN == 3 && *buf_ptr.add(0) == b'R' && *buf_ptr.add(1) == b'U' && *buf_ptr.add(2) == b'N';
 
     if is_help {
         push_history(b"CMDS: HELP, CLS, VER, RUN", 20);
     } else if is_cls {
-        for i in 0..6 { *TERM_HIST_LEN.get_unchecked_mut(i) = 0; } 
+        let h_len_ptr = addr_of_mut!(TERM_HIST_LEN);
+        for i in 0..6 { (*h_len_ptr)[i] = 0; } 
     } else if is_ver {
         push_history(b"OMNIX OS CORE 1.0", 17);
     } else if is_run {

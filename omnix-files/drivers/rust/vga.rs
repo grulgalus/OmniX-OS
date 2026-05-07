@@ -1,3 +1,5 @@
+use core::ptr::{addr_of, addr_of_mut};
+
 const FRAMEBUFFER: *mut u8 = 0xA0000 as *mut u8;
 const SCREEN_SIZE: usize = 64000;
 
@@ -56,26 +58,31 @@ const FONT: [(u8, [u8; 8]); 47] = [
 pub fn put_pixel(x: usize, y: usize, color: u8) {
     if x < 320 && y < 200 {
         let idx = y * 320 + x;
-        unsafe { *BACKBUFFER.get_unchecked_mut(idx) = color; }
+        unsafe {
+            // Bezpecne ziskame ukazatel na pole a posuneme ho na index
+            let ptr = addr_of_mut!(BACKBUFFER) as *mut u8;
+            ptr.add(idx).write(color);
+        }
     }
 }
 
 pub fn clear_screen(color: u8) {
     unsafe {
-        for i in 0..SCREEN_SIZE {
-            *BACKBUFFER.get_unchecked_mut(i) = color;
-        }
+        let ptr = addr_of_mut!(BACKBUFFER) as *mut u8;
+        // Optimalizovana metoda na promazani pole misto for cyklu
+        core::ptr::write_bytes(ptr, color, SCREEN_SIZE);
     }
 }
 
 pub fn swap_buffers() {
-    unsafe { core::ptr::copy_nonoverlapping(BACKBUFFER.as_ptr(), FRAMEBUFFER, SCREEN_SIZE); }
+    unsafe {
+        let src = addr_of!(BACKBUFFER) as *const u8;
+        core::ptr::copy_nonoverlapping(src, FRAMEBUFFER, SCREEN_SIZE);
+    }
 }
 
 pub fn draw_rect(x: usize, y: usize, w: usize, h: usize, color: u8) {
-    for j in y..(y + h) {
-        for i in x..(x + w) { put_pixel(i, j, color); }
-    }
+    for j in y..(y + h) { for i in x..(x + w) { put_pixel(i, j, color); } }
 }
 
 pub fn draw_char(c: u8, x: usize, y: usize, color: u8) {
