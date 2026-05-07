@@ -14,12 +14,64 @@ start:
     or al, 2
     out 0x92, al
 
+    mov si, msg_prompt
+    call print_str
+
+wait_key:
+    mov ah, 0x00
+    int 0x16
+
+    cmp al, 0x04
+    je show_debug
+
+    cmp al, 0x0D
+    je boot_kernel
+
+    jmp wait_key
+
+show_debug:
+    mov si, msg_debug
+    call print_str
+
+wait_debug_key:
+    mov ah, 0x00
+    int 0x16
+    jmp boot_kernel
+
+boot_kernel:
+    mov si, msg_booting
+    call print_str
+
     cli
     lgdt [gdt_descriptor]
     mov eax, cr0
     or eax, 0x1
     mov cr0, eax
     jmp 0x08:start32
+
+print_str:
+    mov ah, 0x0E
+.loop:
+    lodsb
+    test al, al
+    jz .done
+    int 0x10
+    jmp .loop
+.done:
+    ret
+
+msg_prompt  db "OmniX OS Zavadec", 13, 10
+            db "-> Stiskni ENTER pro start OS", 13, 10
+            db "-> Stiskni CTRL+D pro Debug log", 13, 10, 0
+
+msg_debug   db 13, 10, "=== OMNIX DEBUG MENU ===", 13, 10
+            db "[OK] Bootloader nahran do pameti na 0x7C00", 13, 10
+            db "[OK] A20 linka zapnuta (pamet odemcena)", 13, 10
+            db "[OK] GDT tabulka pripravena", 13, 10
+            db "[INFO] Ocekavana pozice Kernelu: 0x7E00", 13, 10
+            db "Stiskni jakoukoliv klavesu pro skok do Rust Jadra...", 13, 10, 0
+
+msg_booting db 13, 10, "Spoustim OmniX Kernel...", 13, 10, 0
 
 align 4
 gdt_start:
