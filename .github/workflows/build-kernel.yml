@@ -39,18 +39,4 @@ jobs:
           name: omnix-os-iso
           path: omnix_os.iso
 
-      - name: Nastavení Pythonu
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Instalace knihoven pro bota
-        run: pip install -r bot/requirements.txt
-
-      - name: Odeslání zprávy na Discord
-        env:
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
-          PING_ID: "<@&1502000912342843523>"
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: python bot/discord_notifier.py
+poghjiksjhnmksjhbnmk
