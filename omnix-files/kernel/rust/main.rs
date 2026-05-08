@@ -54,14 +54,14 @@ fn panic(_info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    // NATVRDO PŘEPÍŠEME CELOU PAMĚŤ NA ČERVENOU BARVU
     let vga_pamet = 0xA0000 as *mut u8;
     
     unsafe {
         for i in 0..64000 {
-            *vga_pamet.add(i) = 4; // 4 = Červená barva ve VGA
+            // write_volatile zakáže kompilátoru použít 'memset'
+            vga_pamet.add(i).write_volatile(4); 
         }
     }
 
-    loop {} // Zastavíme procesor
+    loop {} 
 }
