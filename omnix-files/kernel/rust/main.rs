@@ -30,6 +30,16 @@ pub extern "C" fn _start() -> ! {
     // installer::run_installer();
     system_ui::start();
     loop { unsafe { core::arch::asm!("hlt"); } }
+
+    if let Some(bar0) = pci::find_intel_e1000() {
+        let adresa = bar0 & 0xFFFFFFF0; 
+        
+        // ZATÍM ZAKOMENTUJ DRIVER, než ho reálně napojíme:
+        // net_driver::init(adresa); 
+    } else {
+        // nic
+    }
+
 }
 
 #[no_mangle]
@@ -52,19 +62,4 @@ pub unsafe extern "C" fn memcmp(s1: *const u8, s2: *const u8, n: usize) -> i32 {
         let a = *s1.add(i); let b = *s2.add(i);
         if a != b { return a as i32 - b as i32; } i += 1;
     } 0
-}
-
-crate::pci::find_intel_e1000()
-
-if let Some(bar0) = pci::find_intel_e1000() {
-    // BAR0 obsahuje adresu. Pokud má na konci 1, je to Port I/O, pokud 0, je to Memory Mapped.
-    let adresa = bar0 & 0xFFFFFFF0; // Vyčistíme flagy
-    
-    // Tady předáme "adresu" tvému driveru (tohle přesně tvůj E1000 driver potřebuje!)
-    net_driver::init(adresa); 
-    
-    // Pro debug (ať víš, že to jede) si to zatím můžeš vypsat (jestli máš nějaký print):
-    println!("Intel E1000 nalezen na adrese: {:#X}", adresa);
-} else {
-    println!("Síťová karta nebyla nalezena.");
 }
