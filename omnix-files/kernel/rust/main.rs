@@ -20,6 +20,10 @@ pub mod executor;
 
 use core::panic::PanicInfo;
 
+pub static TERMINAL_APK: &[u8] = include_bytes!("../../boot/apps/terminal.omxapk");
+pub static EXPLORER_APK: &[u8] = include_bytes!("../../boot/apps/explorer.omxapk");
+pub static SETTINGS_APK: &[u8] = include_bytes!("../../boot/apps/settings.omxapk");
+
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! { 
     loop { unsafe { core::arch::asm!("hlt"); } } 

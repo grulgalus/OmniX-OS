@@ -304,8 +304,8 @@ fn draw_desktop() {
     vga::clear_screen(unsafe { BG_COLOR });
 
     let apps = get_apps();
-    draw_icon(10, 10, apps[1].name.as_bytes);
-    draw_icon(10, 50, apps[2].name.as_bytes);
+    draw_icon(10, 10, apps[1].name.as_bytes());
+    draw_icon(10, 50, apps[2].name.as_bytes());
 
     draw_raised_rect(0, 185, 320, 15, 7);
 

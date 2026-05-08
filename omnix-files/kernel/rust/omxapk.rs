@@ -26,10 +26,12 @@ pub fn parse_package(data: &'static [u8]) -> Option<OmxApp<'static>> {
     Some(OmxApp { id, name, payload })
 }
 
-pub fn get_default_apps() -> [OmxApp<'static>; APP_COUNT] {
-    [
-        parse_package(crate::TERMINAL_APK).unwrap(),
-        parse_package(crate::EXPLORER_APK).unwrap(),
-        parse_package(crate::SETTINGS_APK).unwrap(),
-    ]
+pub fn get_default_apps() -> [OmxApp<'static>; APP_COUNT] { 
+    [ 
+        parse_package(crate::TERMINAL_APK).unwrap(), 
+        parse_package(crate::EXPLORER_APK).unwrap(), 
+        parse_package(crate::SETTINGS_APK).unwrap(), 
+        parse_package(crate::SETTINGS_APK).unwrap(), // vycpávka č. 4
+        parse_package(crate::SETTINGS_APK).unwrap(), // vycpávka č. 5
+    ] 
 }
