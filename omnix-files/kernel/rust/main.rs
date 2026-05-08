@@ -1,5 +1,5 @@
-// #![no_std]
-// #![no_main]
+#![no_std]
+#![no_main]
 
 #[path = "../../drivers/rust/vga.rs"]
 pub mod vga;
