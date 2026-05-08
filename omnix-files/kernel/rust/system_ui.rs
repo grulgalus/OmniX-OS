@@ -476,13 +476,16 @@ fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y + h - 1, w, 1, 15);
 }
 
-if w.app_id == 1 {  // Pokud je to Terminal
-    
-    if let Some(app) = crate::omxapk::parse_package(TERMINAL_APK) {
+pub fn spustit_aplikaci_z_okna(app_id: u8) {
+    if app_id == 1 {  // Pokud je to Terminal
         
-        unsafe {
-            crate::executor::run_omx_app(&app);
+        // Tady se pokusí najít ten nahraný balíček z RAM
+        if let Some(app) = crate::omxapk::parse_package(TERMINAL_APK) {
+            
+            // A tady ho bezpečně spustí
+            unsafe {
+                crate::executor::run_omx_app(&app);
+            }
         }
-        
     }
 }
