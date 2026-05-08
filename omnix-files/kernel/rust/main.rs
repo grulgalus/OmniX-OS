@@ -26,11 +26,8 @@ fn panic(_info: &PanicInfo) -> ! {
 #[link_section = ".text._start"]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    // installer::run_installer();
+    installer::run_installer();
     loop { unsafe { core::arch::asm!("hlt"); } }
-    system_ui::start();
-
-    loop {}
 }
 
 #[no_mangle]

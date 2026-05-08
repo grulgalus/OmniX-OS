@@ -25,7 +25,7 @@ static mut WINDOWS: [Window; 4] = [
 static mut ACTIVE_WIN: usize = 0; 
 
 pub fn start() {
-    mouse::init();
+    // mouse::init();
 
     let mut last_click = false;
     let mut last_key = 0;
