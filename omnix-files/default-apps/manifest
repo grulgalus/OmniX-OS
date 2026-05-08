@@ -1,0 +1,6 @@
+# ID, NÁZEV, SOUBOR_S_KODEM
+1,terminal,terminal.rs
+2,explorer,explorer.rs
+3,nano,nano.rs
+4,settings,settings.rs
+5,music,music.rs

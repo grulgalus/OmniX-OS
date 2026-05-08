@@ -9,3 +9,7 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+
+[dependencies]
+# Název záleží na tom, co je napsané v tom Cargo.toml co jsi stáhnul
+net_driver = { path = "../drivers/net" }
