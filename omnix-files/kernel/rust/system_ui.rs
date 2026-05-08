@@ -475,3 +475,8 @@ fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x + w - 1, y, 1, h, 15);
     vga::draw_rect(x, y + h - 1, w, 1, 15);
 }
+
+// app je struktura OmxApp, kterou jsi dostal z parseru
+unsafe {
+    crate::executor::run_omx_app(&app);
+}
