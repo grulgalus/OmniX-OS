@@ -176,9 +176,8 @@ fn draw_desktop() {
     draw_raised_rect(0, 185, 320, 15, 7);
 
     let is_open = unsafe { START_MENU_OPEN };
-    if is_open { draw_sunken_rect(2, 187, 45, 11, 7); }
-    else { draw_raised_rect(2, 187, 45, 11, 7); }
-
+    if is_open { draw_sunken_rect(2, 187, 55, 11, 7); }
+    else { draw_raised_rect(2, 187, 55, 11, 7); }
     vga::draw_str(b"START", 8, 189, 0);
 
     let (h, m) = get_time();
@@ -186,8 +185,8 @@ fn draw_desktop() {
     t_str[0] = b'0' + (h / 10); t_str[1] = b'0' + (h % 10);
     t_str[3] = b'0' + (m / 10); t_str[4] = b'0' + (m % 10);
     
-    draw_sunken_rect(275, 187, 42, 11, 7);
-    vga::draw_str(&t_str, 282, 189, 0);
+    draw_sunken_rect(260, 187, 55, 11, 7);
+    vga::draw_str(&t_str, 265, 189, 0);
 }
 
 fn draw_start_menu() {
@@ -248,8 +247,10 @@ unsafe fn draw_app_window(w: &Window, is_active: bool) {
 }
 
 fn draw_icon(x: usize, y: usize, label: &[u8]) {
-    draw_raised_rect(x + 4, y, 20, 18, 7); vga::draw_rect(x + 8, y + 4, 12, 10, 1);
-    vga::draw_rect(x, y + 20, 30, 9, 1); vga::draw_str(label, x + 2, y + 21, 15);
+    draw_raised_rect(x + 4, y, 20, 18, 7); 
+    vga::draw_rect(x + 8, y + 4, 12, 10, 1);
+    vga::draw_rect(x, y + 20, 30, 9, 1); 
+    vga::draw_str(label, x + 2, y + 22, 15);
 }
 fn draw_cursor(x: usize, y: usize) {
     vga::draw_rect(x, y, 2, 6, 15); vga::draw_rect(x, y, 5, 2, 15); vga::draw_rect(x + 2, y + 2, 2, 2, 15);
