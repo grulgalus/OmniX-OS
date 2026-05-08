@@ -20,7 +20,7 @@ pub fn parse_package(data: &'static [u8]) -> Option<OmxApp<'static>> {
     }
 
     let name_bytes = &data[6..6 + name_len];
-    let name = core::str::from_utf8(name_bytes).unwrap_or("Unknown");
+    let name = unsafe { core::str::from_utf8_unchecked(name_bytes) };
     let payload = &data[6 + name_len..];
 
     Some(OmxApp { id, name, payload })

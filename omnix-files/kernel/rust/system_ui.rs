@@ -50,13 +50,15 @@ fn get_apps() -> [omxapk::OmxApp<'static>; omxapk::APP_COUNT] {
 
 fn get_app_by_id(id: u8) -> omxapk::OmxApp<'static> {
     let apps = get_apps();
-    let mut i = 0;
-    while i < omxapk::APP_COUNT {
-        if apps[i].id == id {
-            return apps[i];
+    
+    // Čistý iterátor: Projde všechny aplikace jednu po druhé
+    for app in apps.iter() {
+        if app.id == id {
+            return *app; // Hvězdička (*) nám aplikaci "zkopíruje"
         }
-        i += 1;
     }
+    
+    // Pokud aplikaci nenajde, vrátí první jako záchranu
     apps[0]
 }
 
@@ -129,15 +131,21 @@ unsafe fn handle_desktop_clicks(mx: usize, my: usize, is_clicked: bool, clicked_
     if START_MENU_OPEN {
         let apps = get_apps();
         let mut i = 0;
-        while i < omxapk::APP_COUNT {
+        
+        // Znovu použijeme náš nesmrtelný iterátor:
+        for app in apps.iter() {
             let item_y = 58 + (i * 20);
+            
+            // Kliknutí na položku v menu
             if mx >= 30 && mx <= 110 && my >= item_y && my <= item_y + 12 {
-                toggle_window(apps[i].id);
+                toggle_window(app.id); // TADY BYLA CHYBA (předtím apps[i].id)
                 START_MENU_OPEN = false;
                 return;
             }
             i += 1;
         }
+        
+        // Kliknutí mimo menu ho zavře
         START_MENU_OPEN = false;
         return;
     }
