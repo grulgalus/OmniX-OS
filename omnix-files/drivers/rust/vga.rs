@@ -75,9 +75,13 @@ pub fn clear_screen(color: u8) {
 }
 
 pub fn swap_buffers() {
+    let vga_pamet = 0xA0000 as *mut u8;
     unsafe {
-        let src = addr_of!(BACKBUFFER) as *const u8;
-        core::ptr::copy_nonoverlapping(src, FRAMEBUFFER, SCREEN_SIZE);
+        for i in 0..64000 {
+            // Tady to BACKBUFFER můžeš mít pojmenované jinak, 
+            // např. BUFFER nebo VIRTUAL_SCREEN, záleží jak sis to tam nazval.
+            vga_pamet.add(i).write_volatile(BACKBUFFER[i]); 
+        }
     }
 }
 
