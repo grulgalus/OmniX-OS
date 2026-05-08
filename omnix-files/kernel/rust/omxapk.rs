@@ -7,31 +7,13 @@ pub struct OmxApp<'a> {
 
 pub const APP_COUNT: usize = 5;
 
-pub fn parse_package(data: &'static [u8]) -> Option<OmxApp<'static>> {
-    if data.len() < 6 || &data[0..4] != b"OMX!" {
-        return None;
-    }
-
-    let id = data[4];
-    let name_len = data[5] as usize;
-
-    if data.len() < 6 + name_len {
-        return None;
-    }
-
-    let name_bytes = &data[6..6 + name_len];
-    let name = unsafe { core::str::from_utf8_unchecked(name_bytes) };
-    let payload = &data[6 + name_len..];
-
-    Some(OmxApp { id, name, payload })
-}
-
-pub fn get_default_apps() -> [OmxApp<'static>; APP_COUNT] { 
-    [ 
-        parse_package(crate::TERMINAL_APK).unwrap(), 
-        parse_package(crate::EXPLORER_APK).unwrap(), 
-        parse_package(crate::SETTINGS_APK).unwrap(), 
-        parse_package(crate::SETTINGS_APK).unwrap(), // vycpávka č. 4
-        parse_package(crate::SETTINGS_APK).unwrap(), // vycpávka č. 5
-    ] 
+// HLOUPÁ, ALE 100% FUNKČNÍ VERZE PRO TEST UI
+pub fn get_default_apps() -> [OmxApp<'static>; APP_COUNT] {
+    [
+        OmxApp { id: 1, name: "Terminal", payload: crate::TERMINAL_APK },
+        OmxApp { id: 2, name: "Explorer", payload: crate::EXPLORER_APK },
+        OmxApp { id: 3, name: "Settings", payload: crate::SETTINGS_APK },
+        OmxApp { id: 4, name: "Music",    payload: crate::SETTINGS_APK },
+        OmxApp { id: 5, name: "Nano",     payload: crate::SETTINGS_APK },
+    ]
 }
