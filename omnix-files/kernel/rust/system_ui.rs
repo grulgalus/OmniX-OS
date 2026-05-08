@@ -68,14 +68,14 @@ pub fn start() {
 unsafe fn draw_boot_animation() {
     vga::clear_screen(0); // Černé pozadí jako při startu PC
     
-    // Logo OmniX (vycentrované)
-    vga::draw_str(b"OMNIX OS", 280, 200, 15);
-    vga::draw_str(b"Starting system...", 265, 230, 7);
+    // Logo OmniX (vycentrované pro 320x200)
+    vga::draw_str(b"OMNIX OS", 120, 80, 15);
+    vga::draw_str(b"Starting...", 110, 100, 7);
 
     // Načítací proužek
-    draw_sunken_rect(220, 250, 200, 15, 0); // Prázdný rámeček
+    draw_sunken_rect(60, 120, 200, 15, 0); // Prázdný rámeček (zmenšený)
     let bar_width = if BOOT_PROGRESS > 196 { 196 } else { BOOT_PROGRESS as usize };
-    vga::draw_rect(222, 252, bar_width, 11, 2); // Zelená výplň
+    vga::draw_rect(62, 122, bar_width, 11, 2); // Zelená výplň
 }
 
 // ------------------------------
@@ -84,30 +84,29 @@ unsafe fn draw_boot_animation() {
 fn draw_windows_login(mx: usize, my: usize) {
     vga::clear_screen(1); // Modré Windows pozadí
 
-    // Avatar uživatele (čtverec)
-    draw_raised_rect(290, 150, 60, 60, 7);
-    vga::draw_rect(305, 160, 30, 30, 15); // Hlava
-    vga::draw_rect(295, 195, 50, 15, 15); // Tělo
+    // Avatar uživatele (posunutý doleva a zmenšený)
+    draw_raised_rect(130, 40, 60, 60, 7);
+    vga::draw_rect(145, 50, 30, 30, 15); // Hlava
+    vga::draw_rect(135, 85, 50, 15, 15); // Tělo
 
-    vga::draw_str(b"OMNIX", 300, 220, 15);
+    vga::draw_str(b"OMNIX", 140, 110, 15);
 
     // Tlačítko ADMIN
-    let admin_c = if mx > 270 && mx < 370 && my > 250 && my < 280 { 10 } else { 7 };
-    draw_raised_rect(270, 250, 100, 30, admin_c);
-    vga::draw_str(b"ADMIN", 300, 260, 0);
+    let admin_c = if mx > 110 && mx < 210 && my > 130 && my < 150 { 10 } else { 7 };
+    draw_raised_rect(110, 130, 100, 20, admin_c);
+    vga::draw_str(b"ADMIN", 140, 136, 0);
 
     // Tlačítko USER
-    let user_c = if mx > 270 && mx < 370 && my > 290 && my < 320 { 10 } else { 7 };
-    draw_raised_rect(270, 290, 100, 30, user_c);
-    vga::draw_str(b"USER", 305, 300, 0);
+    let user_c = if mx > 110 && mx < 210 && my > 160 && my < 180 { 10 } else { 7 };
+    draw_raised_rect(110, 160, 100, 20, user_c);
+    vga::draw_str(b"USER", 145, 166, 0);
 }
 
-// Zbytek plochy...
 fn draw_desktop() {
     vga::clear_screen(unsafe { BG_COLOR });
-    draw_raised_rect(0, SCREEN_H - 20, SCREEN_W, 20, 7); // Spodní lišta po celé šířce 640px
-    draw_raised_rect(2, SCREEN_H - 18, 60, 16, 10);
-    vga::draw_str(b"START", 12, SCREEN_H - 14, 0);
+    draw_raised_rect(0, 180, 320, 20, 7); // Spodní lišta (320px)
+    draw_raised_rect(2, 182, 45, 16, 10);
+    vga::draw_str(b"START", 8, 186, 0);
 }
 
 fn show_notif(msg: &'static [u8]) {
