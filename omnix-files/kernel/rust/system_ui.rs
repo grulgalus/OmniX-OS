@@ -25,18 +25,14 @@ static mut WINDOWS: [Window; 4] = [
 static mut ACTIVE_WIN: usize = 0; 
 
 pub fn start() {
-    // mouse::init();
+    mouse::init();
 
     let mut last_click = false;
     let mut last_key = 0;
 
     loop {
-        // let (mx, my, is_clicked) = mouse::get_state();
-        // let key = keyboard::read_key();
-        let mx = 160;
-        let my = 100;
-        let is_clicked = false;
-        let key = 0;
+        let (mx, my, is_clicked) = mouse::get_state();
+        let key = keyboard::read_key();
         unsafe { BLINK_FRAME = BLINK_FRAME.wrapping_add(1); }
 
         let clicked_now = is_clicked && !last_click;
