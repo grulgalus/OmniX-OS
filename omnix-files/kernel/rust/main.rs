@@ -16,12 +16,12 @@ pub mod installer;
 pub mod system_ui;
 pub mod omxapk;
 
-//use core::panic::PanicInfo;
+use core::panic::PanicInfo;
 
-//#[panic_handler]
-//fn panic(_info: &PanicInfo) -> ! { 
-//    loop { unsafe { core::arch::asm!("hlt"); } } 
-//}
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! { 
+    loop { unsafe { core::arch::asm!("hlt"); } } 
+}
 
 //#[link_section = ".text._start"]
 //#[no_mangle]
