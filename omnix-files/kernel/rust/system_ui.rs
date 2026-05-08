@@ -49,17 +49,14 @@ fn get_apps() -> [omxapk::OmxApp<'static>; omxapk::APP_COUNT] {
 }
 
 fn get_app_by_id(id: u8) -> omxapk::OmxApp<'static> {
-    let app = get_app_by_id(w.app_id); // Získá bezpečně appku!
-    vga::draw_str(app.name.as_bytes(), w.x + 6, w.y + 4, 15);
+    let apps = get_apps();  // TÍMHLE SE OPRAVÍ TA CHYBA "apps not found"
     
-    // Čistý iterátor: Projde všechny aplikace jednu po druhé
     for app in apps.iter() {
         if app.id == id {
-            return *app; // Hvězdička (*) nám aplikaci "zkopíruje"
+            return *app;
         }
     }
     
-    // Pokud aplikaci nenajde, vrátí první jako záchranu
     apps[0]
 }
 
