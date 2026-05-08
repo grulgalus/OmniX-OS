@@ -1,3 +1,4 @@
+#[derive(Copy, Clone)]
 pub struct OmxApp<'a> {
     pub id: u8,
     pub name: &'a str,

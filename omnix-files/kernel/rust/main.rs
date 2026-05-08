@@ -25,10 +25,6 @@ fn panic(_info: &PanicInfo) -> ! {
     loop { unsafe { core::arch::asm!("hlt"); } } 
 }
 
-pub static TERMINAL_APK: &[u8] = include_bytes!("../../../boot/apps/terminal.omxapk");
-pub static EXPLORER_APK: &[u8] = include_bytes!("../../../boot/apps/explorer.omxapk");
-pub static SETTINGS_APK: &[u8] = include_bytes!("../../../boot/apps/settings.omxapk");
-
 #[link_section = ".text._start"]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {

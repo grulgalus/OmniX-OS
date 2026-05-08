@@ -304,8 +304,8 @@ fn draw_desktop() {
     vga::clear_screen(unsafe { BG_COLOR });
 
     let apps = get_apps();
-    draw_icon(10, 10, apps[1].icon_label);
-    draw_icon(10, 50, apps[2].icon_label);
+    draw_icon(10, 10, apps[1].name.as_bytes);
+    draw_icon(10, 50, apps[2].name.as_bytes);
 
     draw_raised_rect(0, 185, 320, 15, 7);
 
@@ -338,7 +338,7 @@ fn draw_start_menu() {
     let apps = get_apps();
     let mut i = 0;
     while i < omxapk::APP_COUNT {
-        vga::draw_str(apps[i].name, 30, 58 + (i * 20), 0);
+        vga::draw_str(apps[i].name.as_bytes(), 30, 58 + (i * 20), 0);
         i += 1;
     }
 
@@ -372,7 +372,7 @@ unsafe fn draw_app_window(w: &Window, is_active: bool) {
 
     let title_c = if is_active { 1 } else { 8 };
     vga::draw_rect(w.x + 2, w.y + 2, w.w - 4, 12, title_c);
-    vga::draw_str(app.title, w.x + 6, w.y + 4, 15);
+    vga::draw_str(app.name.as_bytes(), w.x + 6, w.y + 4, 15);
 
     draw_raised_rect(w.x + w.w - 14, w.y + 2, 12, 12, 7);
     vga::draw_str(b"X", w.x + w.w - 11, w.y + 4, 0);
@@ -476,9 +476,3 @@ fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y + h - 1, w, 1, 15);
 }
 
-pub fn spustit_aplikaci(id_na_ktere_uzivatel_kliknul: u8) {
-    let appka = najdi_aplikaci_v_seznamu(id_na_ktere_uzivatel_kliknul);
-    unsafe {
-        crate::executor::run_omx_app(&appka);
-    }
-}
