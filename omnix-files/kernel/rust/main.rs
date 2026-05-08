@@ -28,6 +28,9 @@ fn panic(_info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     // installer::run_installer();
     loop { unsafe { core::arch::asm!("hlt"); } }
+    system_ui::start();
+
+    loop {}
 }
 
 #[no_mangle]
@@ -51,7 +54,3 @@ pub unsafe extern "C" fn memcmp(s1: *const u8, s2: *const u8, n: usize) -> i32 {
         if a != b { return a as i32 - b as i32; } i += 1;
     } 0
 }
-
-system_ui::start();
-
-loop {}
