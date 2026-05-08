@@ -44,11 +44,11 @@ static mut ACTIVE_WIN: usize = 0;
 static mut DRAG_OFFSET_X: usize = 0;
 static mut DRAG_OFFSET_Y: usize = 0;
 
-fn get_apps() -> [omxapk::OmxApp; omxapk::APP_COUNT] {
+fn get_apps() -> [omxapk::OmxApp<'static>; omxapk::APP_COUNT] {
     omxapk::get_default_apps()
 }
 
-fn get_app_by_id(id: u8) -> omxapk::OmxApp {
+fn get_app_by_id(id: u8) -> omxapk::OmxApp<'static> {
     let apps = get_apps();
     let mut i = 0;
     while i < omxapk::APP_COUNT {
@@ -476,16 +476,9 @@ fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y + h - 1, w, 1, 15);
 }
 
-pub fn spustit_aplikaci_z_okna(app_id: u8) {
-    if app_id == 1 {  // Pokud je to Terminal
-        
-        // Tady se pokusí najít ten nahraný balíček z RAM
-        if let Some(app) = crate::omxapk::parse_package(TERMINAL_APK) {
-            
-            // A tady ho bezpečně spustí
-            unsafe {
-                crate::executor::run_omx_app(&app);
-            }
-        }
+pub fn spustit_aplikaci(id_na_ktere_uzivatel_kliknul: u8) {
+    let appka = najdi_aplikaci_v_seznamu(id_na_ktere_uzivatel_kliknul);
+    unsafe {
+        crate::executor::run_omx_app(&appka);
     }
 }
