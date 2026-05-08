@@ -476,7 +476,13 @@ fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y + h - 1, w, 1, 15);
 }
 
-// app je struktura OmxApp, kterou jsi dostal z parseru
-unsafe {
-    crate::executor::run_omx_app(&app);
+if w.app_id == 1 {  // Pokud je to Terminal
+    
+    if let Some(app) = crate::omxapk::parse_package(TERMINAL_APK) {
+        
+        unsafe {
+            crate::executor::run_omx_app(&app);
+        }
+        
+    }
 }

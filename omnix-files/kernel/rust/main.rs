@@ -29,16 +29,13 @@ fn panic(_info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     // installer::run_installer();
     system_ui::start();
-    loop { unsafe { core::arch::asm!("hlt"); } }
-
     if let Some(bar0) = pci::find_intel_e1000() {
-        let adresa = bar0 & 0xFFFFFFF0; 
-        
-        // ZATÍM ZAKOMENTUJ DRIVER, než ho reálně napojíme:
-        // net_driver::init(adresa); 
+        let adresa = bar0 & 0xFFFFFFF0;
     } else {
         // nic
     }
+
+    loop { unsafe { core::arch::asm!("hlt"); } } 
 
 }
 
