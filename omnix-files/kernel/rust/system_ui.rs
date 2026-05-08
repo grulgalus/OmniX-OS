@@ -338,7 +338,7 @@ fn draw_start_menu() {
     let apps = get_apps();
     let mut i = 0;
     while i < omxapk::APP_COUNT {
-        vga::draw_str(apps[i].title, 30, 58 + (i * 20), 0);
+        vga::draw_str(apps[i].name, 30, 58 + (i * 20), 0);
         i += 1;
     }
 

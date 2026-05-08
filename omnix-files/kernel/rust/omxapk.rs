@@ -4,7 +4,7 @@ pub struct OmxApp<'a> {
     pub payload: &'a [u8],
 }
 
-pub const APP_COUNT: usize = 3;
+pub const APP_COUNT: usize = 5;
 
 pub fn parse_package(data: &'static [u8]) -> Option<OmxApp<'static>> {
     if data.len() < 6 || &data[0..4] != b"OMX!" {
