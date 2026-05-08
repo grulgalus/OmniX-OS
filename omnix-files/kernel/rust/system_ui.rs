@@ -426,7 +426,7 @@ unsafe fn draw_app_window(w: &Window, is_active: bool) {
         let mut cy = w.y + 20;
         while start < NANO_LEN {
             let end = if start + chars_per_line > NANO_LEN { NANO_LEN } else { start + chars_per_line };
-            let text = core::slice::from_raw_parts(addr_of!(NANO_BUF[start]), end - start);
+            let text = core::slice::from_raw_parts((addr_of!(NANO_BUF) as *const u8).add(start), end - start);
             vga::draw_str(text, w.x + 8, cy, 0);
             start += chars_per_line;
             cy += 12;
