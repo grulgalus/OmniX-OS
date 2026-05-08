@@ -31,7 +31,7 @@ pub unsafe fn write_sector(lba: u32, data: &[u8; 512]) {
     outb(0x1F7, 0xE7);
 }
 
-pub fn run_real_installation() {
+pub fn run_installer() {
     // Tady bys reálně vzal bajty OS v paměti a začal je sektor po sektoru
     // zapisovat na disk. Toto přepíše data na virtuálním pevném disku!
     let dummy_sector = [0; 512]; // Sem by přišly reálné data

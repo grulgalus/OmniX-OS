@@ -1,7 +1,7 @@
 use crate::vga;
 use crate::mouse;
 use crate::keyboard;
-use core::ptr::{addr_of, addr_of_mut};
+use core::ptr::addr_of_mut;
 
 // Rozšířené stavy OS
 static mut OS_STATE: u8 = 0; // 0 = Boot animace, 1 = Windows Login, 2 = Desktop
