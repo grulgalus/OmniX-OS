@@ -29,7 +29,7 @@ const ASCII_TABLE_UPPER: [char; 58] = [
 ];
 
 // 3. FUNKCE, KTERÁ ČTE HARDWARE A VRACÍ ROVNOU PÍSMENKO
-pub fn get_key() -> Option<char> {
+pub fn read_key() -> Option<char> {
     unsafe {
         let status = inb(0x64);
         
