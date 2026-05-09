@@ -36,8 +36,6 @@ static mut WINDOWS: [Window; omxapk::APP_COUNT] = [
     Window { app_id: 1, x: 10, y: 10, w: 260, h: 150, visible: false, is_dragging: false, maximized: false, old_x: 0, old_y: 0, old_w: 0, old_h: 0 },
     Window { app_id: 2, x: 30, y: 30, w: 220, h: 120, visible: false, is_dragging: false, maximized: false, old_x: 0, old_y: 0, old_w: 0, old_h: 0 },
     Window { app_id: 3, x: 50, y: 50, w: 240, h: 130, visible: false, is_dragging: false, maximized: false, old_x: 0, old_y: 0, old_w: 0, old_h: 0 },
-    Window { app_id: 4, x: 70, y: 40, w: 180, h: 110, visible: false, is_dragging: false, maximized: false, old_x: 0, old_y: 0, old_w: 0, old_h: 0 },
-    Window { app_id: 5, x: 90, y: 60, w: 160, h: 90,  visible: false, is_dragging: false, maximized: false, old_x: 0, old_y: 0, old_w: 0, old_h: 0 },
 ];
 
 static mut ACTIVE_WIN: usize = 0;
