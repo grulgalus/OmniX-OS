@@ -1,80 +1,79 @@
 use core::arch::asm;
-use core::sync::atomic::{AtomicBool, Ordering};
 
-static SHIFT_PRESSED: AtomicBool = AtomicBool::new(false);
-
-#[inline]
+// Funkce pro čtení z portu
 unsafe fn inb(port: u16) -> u8 {
-    let mut value: u8;
-    asm!(
-        "in al, dx",
-        out("al") value,
-        in("dx") port,
-        options(nomem, nostack, preserves_flags)
-    );
-    value
+    let data: u8;
+    asm!("in al, dx", out("al") data, in("dx") port);
+    data
 }
 
-pub fn read_key() -> u8 {
-    let status: u8;
+// PAMĚŤ PRO SHIFT (Uloží si, jestli držíš klávesu)
+static mut SHIFT_PRESSED: bool = false;
+
+// 1. ZÁKLADNÍ ASCII TABULKA (Bez shiftu)
+const ASCII_TABLE_LOWER: [char; 58] = [
+    '\0', '\x1B', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\x08',
+    '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
+    '\0', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
+    '\0', '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', '\0',
+    '*', '\0', ' ',
+];
+
+// 2. SHIFT ASCII TABULKA (S drženým shiftem)
+const ASCII_TABLE_UPPER: [char; 58] = [
+    '\0', '\x1B', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\x08',
+    '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
+    '\0', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',
+    '\0', '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', '\0',
+    '*', '\0', ' ',
+];
+
+// 3. FUNKCE, KTERÁ ČTE HARDWARE A VRACÍ ROVNOU PÍSMENKO
+pub fn get_key() -> Option<char> {
     unsafe {
-        core::arch::asm!("in al, 0x64", out("al") status);
-        if status & 0x01 != 0 {
-            let scancode: u8;
-            core::arch::asm!("in al, 0x60", out("al") scancode);
+        let status = inb(0x64);
+        
+        // Nejsou žádná data
+        if (status & 0x01) == 0 {
+            return None;
+        }
 
-            // Zmáčknutí SHIFT
-            if scancode == 0x2A || scancode == 0x36 {
-                SHIFT_PRESSED.store(true, Ordering::SeqCst);
-                return 0;
-            // Puštění SHIFT
-            } else if scancode == 0xAA || scancode == 0xB6 {
-                SHIFT_PRESSED.store(false, Ordering::SeqCst);
-                return 0;
-            }
+        // FIX NA MYŠ! (Pokud je bit 5 roven 1, jsou to data myši -> ZAHODIT)
+        if (status & 0x20) != 0 {
+            let _trash = inb(0x60); 
+            return None;
+        }
 
-            // Ignorujeme puštění všech ostatních kláves
-            if scancode >= 0x80 {
-                return 0;
-            }
+        // Přečteme scancode z klávesnice
+        let scancode = inb(0x60);
 
-            // Převod na písmenko
-            if SHIFT_PRESSED.load(Ordering::SeqCst) {
-                return scancode_to_ascii_shift(scancode);
-            } else {
-                return scancode_to_ascii(scancode);
+        // DETEKCE SHIFTU (Scancody: 0x2A = Levý Shift, 0x36 = Pravý Shift)
+        // Když klávesu pustíš, přičte se k jejímu kódu 0x80 (takže 0xAA a 0xB6)
+        match scancode {
+            0x2A | 0x36 => { SHIFT_PRESSED = true; return None; }
+            0xAA | 0xB6 => { SHIFT_PRESSED = false; return None; }
+            _ => {}
+        }
+
+        // Zajímají nás jen "stisky" (hodnoty pod 0x80). 
+        // Všechna ostatní uvolnění kláves ignorujeme.
+        if scancode < 0x80 {
+            let idx = scancode as usize;
+            
+            if idx < ASCII_TABLE_LOWER.len() {
+                // Vybereme tabulku podle toho, jestli se drží Shift
+                let character = if SHIFT_PRESSED {
+                    ASCII_TABLE_UPPER[idx]
+                } else {
+                    ASCII_TABLE_LOWER[idx]
+                };
+
+                if character != '\0' {
+                    return Some(character);
+                }
             }
         }
-    }
-    0
-}
-
-fn scancode_to_ascii(scancode: u8) -> u8 {
-    match scancode {
-        0x01 => 27, 0x02 => b'1', 0x03 => b'2', 0x04 => b'3', 0x05 => b'4', 0x06 => b'5',
-        0x07 => b'6', 0x08 => b'7', 0x09 => b'8', 0x0A => b'9', 0x0B => b'0', 0x0C => b'-',
-        0x0D => b'=', 0x0E => 8, 0x0F => b'\t', 0x10 => b'q', 0x11 => b'w', 0x12 => b'e',
-        0x13 => b'r', 0x14 => b't', 0x15 => b'y', 0x16 => b'u', 0x17 => b'i', 0x18 => b'o',
-        0x19 => b'p', 0x1A => b'[', 0x1B => b']', 0x1C => b'\n', 0x1E => b'a', 0x1F => b's',
-        0x20 => b'd', 0x21 => b'f', 0x22 => b'g', 0x23 => b'h', 0x24 => b'j', 0x25 => b'k',
-        0x26 => b'l', 0x27 => b';', 0x28 => b'\'', 0x29 => b'`', 0x2B => b'\\', 0x2C => b'z',
-        0x2D => b'x', 0x2E => b'c', 0x2F => b'v', 0x30 => b'b', 0x31 => b'n', 0x32 => b'm',
-        0x33 => b',', 0x34 => b'.', 0x35 => b'/', 0x39 => b' ',
-        _ => 0,
-    }
-}
-
-fn scancode_to_ascii_shift(scancode: u8) -> u8 {
-    match scancode {
-        0x01 => 27, 0x02 => b'!', 0x03 => b'@', 0x04 => b'#', 0x05 => b'$', 0x06 => b'%',
-        0x07 => b'^', 0x08 => b'&', 0x09 => b'*', 0x0A => b'(', 0x0B => b')', 0x0C => b'_',
-        0x0D => b'+', 0x0E => 8, 0x0F => b'\t', 0x10 => b'Q', 0x11 => b'W', 0x12 => b'E',
-        0x13 => b'R', 0x14 => b'T', 0x15 => b'Y', 0x16 => b'U', 0x17 => b'I', 0x18 => b'O',
-        0x19 => b'P', 0x1A => b'{', 0x1B => b'}', 0x1C => b'\n', 0x1E => b'A', 0x1F => b'S',
-        0x20 => b'D', 0x21 => b'F', 0x22 => b'G', 0x23 => b'H', 0x24 => b'J', 0x25 => b'K',
-        0x26 => b'L', 0x27 => b':', 0x28 => b'"', 0x29 => b'~', 0x2B => b'|', 0x2C => b'Z',
-        0x2D => b'X', 0x2E => b'C', 0x2F => b'V', 0x30 => b'B', 0x31 => b'N', 0x32 => b'M',
-        0x33 => b'<', 0x34 => b'>', 0x35 => b'?', 0x39 => b' ',
-        _ => 0,
+        
+        None
     }
 }
