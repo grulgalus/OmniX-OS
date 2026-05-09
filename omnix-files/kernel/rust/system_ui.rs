@@ -493,7 +493,7 @@ pub fn open_app_by_id(num_id: u8) {
         // vlastní appku (např. hry s ID 4 a víc).
         // V takovém případě zavoláme tvůj starý omxapk_loader.
         _ => {
-            crate::println!("Spoustim komunitni .omxapk (ID: {})...", num_id);
+//            crate::println!("Spoustim komunitni .omxapk (ID: {})...", num_id);
             // crate::omxapk::run_package(num_id); 
         }
     }

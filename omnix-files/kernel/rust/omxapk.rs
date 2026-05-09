@@ -1,88 +1,77 @@
-#[derive(Copy, Clone)]
-pub struct OmxApp<'a> {
-    pub num_id: u8,              // Rychlé číslo pro Window Manager (např. 1, 2, 3)
-    pub package_id: &'a str,     // Např. "com.omnix.terminal"
-    pub name: &'a str,           // Např. "Terminal"
-    pub payload: &'a [u8],       // Samotný kód/data aplikace
+use core::str;
+
+// Struktura tvého balíčku pro systém (Start Menu a spouštění)
+#[derive(Clone, Copy)]
+pub struct OmxApk<'a> {
+    pub num_id: u8,
+    pub name: &'a str,
+    pub pkg_id: &'a str,
+    pub payload: &'a [u8],
 }
 
-pub const APP_COUNT: usize = 5;
-
-/// Vylepšený parser, který nerozbije jména a je připraven na tvůj nový formát!
-pub fn parse_package(data: &'static [u8]) -> Option<OmxApp<'static>> {
-    // Kontrola hlavičky "OMX!" (4 bajty)
-    if data.len() < 10 || &data[0..4] != b"OMX!" {
-        return None;
-    }
-
-    // Pozice 4: Číselné ID pro rychlé přepínání oken
-    let num_id = data[4];
-    
-    // Pozice 5: Délka jména aplikace
-    let name_len = data[5] as usize;
-    
-    // Pozice 6: Délka package-id (com.omnix.něco)
-    let pkg_id_len = data[6] as usize;
-
-    let total_header_len = 7 + name_len + pkg_id_len;
-
-    // Bezpečnostní kontrola, jestli soubor není ustřižený
-    if data.len() < total_header_len {
-        return None;
-    }
-
-    // Vytažení Jména
-    let name_bytes = &data[7 .. 7 + name_len];
-    let name = unsafe { core::str::from_utf8_unchecked(name_bytes) };
-
-    // Vytažení Package ID
-    let pkg_id_bytes = &data[7 + name_len .. 7 + name_len + pkg_id_len];
-    let package_id = unsafe { core::str::from_utf8_unchecked(pkg_id_bytes) };
-
-    // Zbytek souboru je Payload (tady mohou být zdrojáky nebo ikona v budoucnu)
-    let payload = &data[total_header_len..];
-
-    Some(OmxApp {
-        num_id,
-        package_id,
-        name,
-        payload,
-    })
-}
-
-// Inicializace aplikací při bootu systému
-pub fn get_default_apps() -> [OmxApp<'static>; APP_COUNT] {
-    // Když se něco nepovede načíst, máme záchrannou "Empty" appku
-    let fallback = OmxApp { 
-        num_id: 255, 
-        package_id: "com.omnix.error", 
-        name: "Error", 
-        payload: &[] 
-    };
-
-    [
-    Package {
-       num_id: 1,
-       name: "Terminal",
-       pkg_id: "com.omnix.terminal",
-       payload: &[],
+// Natvrdo zapsané defaultní aplikace. Mají prázdný payload,
+// protože se nespouští z paměti, ale přímo z jádra (z modulu apps::).
+pub const DEFAULT_APPS: [OmxApk<'static>; 3] = [
+    OmxApk {
+        num_id: 1,
+        name: "Terminal",
+        pkg_id: "com.omnix.terminal",
+        payload: &[],
     },
-    Package {
-       num_id: 2,
-       name: "Explorer",
-       pkg_id: "com.omnix.explorer",
-       payload: &[],
+    OmxApk {
+        num_id: 2,
+        name: "Explorer",
+        pkg_id: "com.omnix.explorer",
+        payload: &[],
     },
-    Package {
+    OmxApk {
         num_id: 3,
         name: "Settings",
         pkg_id: "com.omnix.settings",
         payload: &[],
     },
-        // parse_package(crate::TERMINAL_APK).unwrap_or(fallback),
-        //parse_package(crate::EXPLORER_APK).unwrap_or(fallback),
-        //parse_package(crate::SETTINGS_APK).unwrap_or(fallback),
-        fallback, // Tady časem doplníš ty další
-        fallback, 
-    ]
+];
+
+// Parser pro opravdové .omxapk balíčky (komunitní appky načtené z disku)
+// Přesně odpovídá tvému Python builderu (hlavička b'OMX!')
+pub fn parse_package(data: &[u8]) -> Option<OmxApk> {
+    // Balíček musí mít alespoň 7 bajtů základní hlavičky
+    if data.len() < 7 {
+        return None;
+    }
+    
+    // Kontrola tvého magického slova
+    if &data[0..4] != b"OMX!" {
+        return None;
+    }
+    
+    let num_id = data[4];
+    let name_len = data[5] as usize;
+    let pkg_id_len = data[6] as usize;
+
+    let mut offset = 7;
+    
+    // Kontrola, jestli soubor není poškozený/useknutý
+    if data.len() < offset + name_len + pkg_id_len {
+        return None;
+    }
+
+    let name_bytes = &data[offset..offset + name_len];
+    offset += name_len;
+    let pkg_id_bytes = &data[offset..offset + pkg_id_len];
+    offset += pkg_id_len;
+
+    // Převod bytů na text (pokud je v tom nesmysl, použije se fallback string)
+    let name = str::from_utf8(name_bytes).unwrap_or("Unknown App");
+    let pkg_id = str::from_utf8(pkg_id_bytes).unwrap_or("com.unknown");
+    
+    // Zbytek souboru je samotný zkompilovaný binární kód
+    let payload = &data[offset..];
+
+    Some(OmxApk {
+        num_id,
+        name,
+        pkg_id,
+        payload,
+    })
 }
