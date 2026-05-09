@@ -52,7 +52,7 @@ fn get_app_by_id(id: u8) -> omxapk::OmxApp<'static> {
     let apps = get_apps();  // TÍMHLE SE OPRAVÍ TA CHYBA "apps not found"
     
     for app in apps.iter() {
-        if app.id == id {
+        if app.num_id == id {
             return *app;
         }
     }
@@ -136,7 +136,7 @@ unsafe fn handle_desktop_clicks(mx: usize, my: usize, is_clicked: bool, clicked_
             
             // Kliknutí na položku v menu
             if mx >= 30 && mx <= 110 && my >= item_y && my <= item_y + 12 {
-                toggle_window(app.id); // TADY BYLA CHYBA (předtím apps[i].id)
+                toggle_window(app.num_id); // TADY BYLA CHYBA (předtím apps[i].id)
                 START_MENU_OPEN = false;
                 return;
             }
@@ -153,7 +153,7 @@ unsafe fn handle_desktop_clicks(mx: usize, my: usize, is_clicked: bool, clicked_
     while i < 2 {
         let icon_y = 10 + (i * 40);
         if mx >= 10 && mx <= 40 && my >= icon_y && my <= icon_y + 30 {
-            toggle_window(apps[i + 1].id);
+            toggle_window(apps[i + 1].num_id);
             return;
         }
         i += 1;
