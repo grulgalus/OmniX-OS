@@ -61,9 +61,27 @@ pub fn get_default_apps() -> [OmxApp<'static>; APP_COUNT] {
     };
 
     [
-        parse_package(crate::TERMINAL_APK).unwrap_or(fallback),
-        parse_package(crate::EXPLORER_APK).unwrap_or(fallback),
-        parse_package(crate::SETTINGS_APK).unwrap_or(fallback),
+    Package {
+       num_id: 1,
+       name: "Terminal",
+       pkg_id: "com.omnix.terminal",
+       payload: &[],
+    },
+    Package {
+       num_id: 2,
+       name: "Explorer",
+       pkg_id: "com.omnix.explorer",
+       payload: &[],
+    },
+    Package {
+        num_id: 3,
+        name: "Settings",
+        pkg_id: "com.omnix.settings",
+        payload: &[],
+    },
+        // parse_package(crate::TERMINAL_APK).unwrap_or(fallback),
+        //parse_package(crate::EXPLORER_APK).unwrap_or(fallback),
+        //parse_package(crate::SETTINGS_APK).unwrap_or(fallback),
         fallback, // Tady časem doplníš ty další
         fallback, 
     ]

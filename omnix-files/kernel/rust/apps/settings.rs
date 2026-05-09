@@ -38,5 +38,5 @@ pub fn run() {
         outb(0x61, tmp);
     }
 
-    crate::vga::println!("[Nastaveni] Audio test dokocen!");
+    // crate::vga::println!("[Nastaveni] Audio test dokocen!");
 }
