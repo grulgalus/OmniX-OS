@@ -5,8 +5,8 @@ unsafe fn inb(port: u16) -> u8 {
 }
 
 pub fn run() {
-    crate::println!("\n[Terminal] HARDWARE KEY LOGGER");
-    crate::println!("Stiskni 3 klavesy pro navrat do OS...");
+    crate::vga::println!("\n[Terminal] HARDWARE KEY LOGGER");
+    crate::vga::println!("Stiskni 3 klavesy pro navrat do OS...");
 
     let mut keys_pressed = 0;
 
@@ -20,12 +20,12 @@ pub fn run() {
                 
                 // Pokud je scancode < 0x80, znamená to, že klávesa byla STISKNUTA (ne puštěna)
                 if scancode < 0x80 {
-                    crate::println!("  > Stisknuto hw tlacitko: 0x{:02X}", scancode);
+                    crate::vga::println!("  > Stisknuto hw tlacitko: 0x{:02X}", scancode);
                     keys_pressed += 1;
                 }
             }
         }
     }
 
-    crate::println!("[Terminal] Uvolnuji ovladani zpet jadru.");
+    crate::vga::println!("[Terminal] Uvolnuji ovladani zpet jadru.");
 }

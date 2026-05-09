@@ -11,7 +11,7 @@ unsafe fn inb(port: u16) -> u8 {
 }
 
 pub fn run() {
-    crate::println!("\n[Nastaveni] Testuji hardware PC Speaker...");
+    crate::vga::println!("\n[Nastaveni] Testuji hardware PC Speaker...");
 
     let freq = 440; // Frekvence 440 Hz
     let div = 1193180 / freq;
@@ -38,5 +38,5 @@ pub fn run() {
         outb(0x61, tmp);
     }
 
-    crate::println!("[Nastaveni] Audio test dokocen!");
+    crate::vga::println!("[Nastaveni] Audio test dokocen!");
 }
