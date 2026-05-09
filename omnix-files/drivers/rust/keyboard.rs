@@ -1,79 +1,72 @@
 use core::arch::asm;
 
-// Funkce pro čtení z portu
 unsafe fn inb(port: u16) -> u8 {
     let data: u8;
     asm!("in al, dx", out("al") data, in("dx") port);
     data
 }
 
-// PAMĚŤ PRO SHIFT (Uloží si, jestli držíš klávesu)
 static mut SHIFT_PRESSED: bool = false;
 
-// 1. ZÁKLADNÍ ASCII TABULKA (Bez shiftu)
-const ASCII_TABLE_LOWER: [char; 58] = [
-    '\0', '\x1B', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\x08',
-    '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
-    '\0', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
-    '\0', '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', '\0',
-    '*', '\0', ' ',
+// ASCII tabulky teď obsahují přímo u8 (bajty)
+// V Rustu se bajt zapíše jako b'A', což je úplně to samé jako číslo 65.
+const ASCII_TABLE_LOWER: [u8; 58] = [
+    0, 27, b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'0', b'-', b'=', 8,
+    9, b'q', b'w', b'e', b'r', b't', b'y', b'u', b'i', b'o', b'p', b'[', b']', 10,
+    0, b'a', b's', b'd', b'f', b'g', b'h', b'j', b'k', b'l', b';', b'\'', b'`',
+    0, b'\\', b'z', b'x', b'c', b'v', b'b', b'n', b'm', b',', b'.', b'/', 0,
+    b'*', 0, b' ',
 ];
 
-// 2. SHIFT ASCII TABULKA (S drženým shiftem)
-const ASCII_TABLE_UPPER: [char; 58] = [
-    '\0', '\x1B', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\x08',
-    '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
-    '\0', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',
-    '\0', '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', '\0',
-    '*', '\0', ' ',
+const ASCII_TABLE_UPPER: [u8; 58] = [
+    0, 27, b'!', b'@', b'#', b'$', b'%', b'^', b'&', b'*', b'(', b')', b'_', b'+', 8,
+    9, b'Q', b'W', b'E', b'R', b'T', b'Y', b'U', b'I', b'O', b'P', b'{', b'}', 10,
+    0, b'A', b'S', b'D', b'F', b'G', b'H', b'J', b'K', b'L', b':', b'"', b'~',
+    0, b'|', b'Z', b'X', b'C', b'V', b'B', b'N', b'M', b'<', b'>', b'?', 0,
+    b'*', 0, b' ',
 ];
 
-// 3. FUNKCE, KTERÁ ČTE HARDWARE A VRACÍ ROVNOU PÍSMENKO
-pub fn read_key() -> Option<char> {
+// Funkce teď vrací u8. Pokud není nic stisknuto, vrací 0.
+pub fn read_key() -> u8 {
     unsafe {
         let status = inb(0x64);
         
-        // Nejsou žádná data
+        // Pokud nejsou data, vrať 0
         if (status & 0x01) == 0 {
-            return None;
+            return 0;
         }
 
-        // FIX NA MYŠ! (Pokud je bit 5 roven 1, jsou to data myši -> ZAHODIT)
+        // MYŠÍ FILTR (bit 5). Tohle tě zbaví těch náhodných čísel na obrazovce!
         if (status & 0x20) != 0 {
-            let _trash = inb(0x60); 
-            return None;
+            let _trash = inb(0x60); // Přečíst a zahodit
+            return 0;
         }
 
-        // Přečteme scancode z klávesnice
         let scancode = inb(0x60);
 
-        // DETEKCE SHIFTU (Scancody: 0x2A = Levý Shift, 0x36 = Pravý Shift)
-        // Když klávesu pustíš, přičte se k jejímu kódu 0x80 (takže 0xAA a 0xB6)
+        // Detekce drženého Shiftu
         match scancode {
-            0x2A | 0x36 => { SHIFT_PRESSED = true; return None; }
-            0xAA | 0xB6 => { SHIFT_PRESSED = false; return None; }
+            0x2A | 0x36 => { SHIFT_PRESSED = true; return 0; }
+            0xAA | 0xB6 => { SHIFT_PRESSED = false; return 0; }
             _ => {}
         }
 
-        // Zajímají nás jen "stisky" (hodnoty pod 0x80). 
-        // Všechna ostatní uvolnění kláves ignorujeme.
-        if scancode < 0x80 {
-            let idx = scancode as usize;
-            
-            if idx < ASCII_TABLE_LOWER.len() {
-                // Vybereme tabulku podle toho, jestli se drží Shift
-                let character = if SHIFT_PRESSED {
-                    ASCII_TABLE_UPPER[idx]
-                } else {
-                    ASCII_TABLE_LOWER[idx]
-                };
+        // Pokud to je puštění jiné klávesy (scancode > 0x80), ignorujeme ho
+        if scancode >= 0x80 {
+            return 0;
+        }
 
-                if character != '\0' {
-                    return Some(character);
-                }
-            }
+        let idx = scancode as usize;
+        if idx < ASCII_TABLE_LOWER.len() {
+            let character = if SHIFT_PRESSED {
+                ASCII_TABLE_UPPER[idx]
+            } else {
+                ASCII_TABLE_LOWER[idx]
+            };
+
+            return character; // Vrací přesné u8 číslo (např. 97 pro 'a')
         }
         
-        None
+        0 // Pokud zmáčkneš nějakou neznámou F klávesu, pošleme 0
     }
 }
