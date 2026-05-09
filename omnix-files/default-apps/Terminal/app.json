@@ -1,0 +1,7 @@
+{
+  "num-id": 1,
+  "package-name": "Terminal",
+  "package-id": "com.omnix.terminal",
+  "build-cmd": "gcc -ffreestanding -c terminal.c -o terminal.bin",
+  "payload-file": "terminal.bin"
+}

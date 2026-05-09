@@ -482,3 +482,19 @@ fn draw_sunken_rect(x: usize, y: usize, w: usize, h: usize, bg: u8) {
     vga::draw_rect(x, y + h - 1, w, 1, 15);
 }
 
+pub fn open_app_by_id(num_id: u8) {
+    match num_id {
+        // Naše interní super-rychlé aplikace (ID 1, 2, 3)
+        1 => crate::apps::terminal::run(),
+        2 => crate::apps::explorer::run(),
+        3 => crate::apps::settings::run(),
+        
+        // Pokud id není 1, 2 nebo 3, znamená to, že si komunita přidala
+        // vlastní appku (např. hry s ID 4 a víc).
+        // V takovém případě zavoláme tvůj starý omxapk_loader.
+        _ => {
+            crate::println!("Spoustim komunitni .omxapk (ID: {})...", num_id);
+            crate::omxapk::run_package(num_id); 
+        }
+    }
+}

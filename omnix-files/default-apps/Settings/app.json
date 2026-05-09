@@ -1,0 +1,7 @@
+{
+  "num-id": 3,
+  "package-name": "Settings",
+  "package-id": "com.omnix.settings",
+  "build-cmd": "",
+  "payload-file": "ui.py"
+}
